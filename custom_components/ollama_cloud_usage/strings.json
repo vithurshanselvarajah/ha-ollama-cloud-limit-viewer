@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Ollama Account",
+        "description": "Enter your ollama.com account details. To get the cookie: log in to ollama.com → DevTools → Network tab → reload → click the first request → copy the full Cookie header value.",
+        "data": {
+          "account_name": "Account Name",
+          "cookie": "Cookie String",
+          "scan_interval": "Update Interval (seconds)"
+        },
+        "data_description": {
+          "account_name": "A friendly name for this account (e.g. Main, Work)",
+          "cookie": "The full Cookie header value from your browser",
+          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
+        }
+      },
+      "reconfigure": {
+        "title": "Update Ollama Cookie",
+        "description": "Paste a fresh cookie string to restore access. Your account name will stay the same.",
+        "data": {
+          "cookie": "Cookie String",
+          "scan_interval": "Update Interval (seconds)"
+        },
+        "data_description": {
+          "cookie": "The full Cookie header value from your browser",
+          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_cookie": "Cookie is invalid or expired — please paste a fresh one",
+      "parse_error": "Connected but could not parse usage data — page structure may have changed",
+      "cannot_connect": "Could not connect to ollama.com — check your network",
+      "unknown": "An unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This account is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "session_usage": {
+        "name": "Session Usage"
+      },
+      "session_remaining": {
+        "name": "Session Remaining"
+      },
+      "session_resets_in": {
+        "name": "Session Resets In"
+      },
+      "weekly_usage": {
+        "name": "Weekly Usage"
+      },
+      "weekly_remaining": {
+        "name": "Weekly Remaining"
+      },
+      "weekly_resets_in": {
+        "name": "Weekly Resets In"
+      },
+      "model_info": {
+        "name": "Model Info"
+      }
+    }
+  }
+}

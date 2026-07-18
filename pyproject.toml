@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ha-ollama-cloud-limit-viewer"
+version = "1.0.0"
+description = "Home Assistant custom integration for Ollama cloud usage limit viewing"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "GPL-3.0-only"}
+authors = [
+    {name = "vithusel"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Home Assistant",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-homeassistant-custom-component>=0.13.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[tool.setuptools]
+packages = ["custom_components.ollama_cloud_usage"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "translations/*.json", "brand/*.png"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+]

@@ -1,0 +1,29 @@
+name: Bandit Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+          
+      - name: Run Bandit (Static Analysis)
+        run: bandit -r custom_components/ -ll
+        
+      - name: Check dependencies for known vulnerabilities
+        run: pip-audit
