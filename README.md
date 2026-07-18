@@ -26,7 +26,7 @@ Each configured account creates the following sensors:
 
 1. Open HACS in Home Assistant
 2. Click the three dots menu → **Custom repositories**
-3. Add `https://github.com/vithusel/ollama-cloud-usage` as an **Integration**
+3. Add `https://github.com/vithusel/ha-ollama-cloud-limit-viewer` as an **Integration**
 4. Search for "Ollama Cloud Usage" and install
 5. Restart Home Assistant
 
