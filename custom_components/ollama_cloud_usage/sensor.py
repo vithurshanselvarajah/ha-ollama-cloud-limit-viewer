@@ -8,8 +8,9 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryType
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -113,13 +114,13 @@ class OllamaUsageSensor(
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Ollama {entry.title}",
-            "manufacturer": "Ollama",
-            "model": "Cloud Usage",
-            "entry_type": "service",
-        }
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=f"Ollama {entry.title}",
+            manufacturer="Ollama",
+            model="Cloud Usage",
+            entry_type=ConfigEntryType.SERVICE,
+        )
 
     @property
     def native_value(self) -> str | float | None:
