@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 
@@ -7,6 +8,8 @@ import aiohttp
 from bs4 import BeautifulSoup, Tag
 
 from .const import SETTINGS_URL, USER_AGENT
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class OllamaAuthError(Exception):
@@ -33,7 +36,10 @@ async def fetch_settings_html(session: aiohttp.ClientSession, cookie: str) -> st
         "Accept": "text/html,application/xhtml+xml",
     }
     async with session.get(
-        SETTINGS_URL, headers=headers, allow_redirects=False
+        SETTINGS_URL,
+        headers=headers,
+        allow_redirects=False,
+        raise_for_status=False,
     ) as resp:
         if 300 <= resp.status < 400:
             raise OllamaAuthError(
@@ -125,8 +131,14 @@ def parse_usage(html: str) -> OllamaUsageData:
             weekly_block = block
 
     if session_block is None and len(blocks) > 0:
+        _LOGGER.warning(
+            "Could not identify a session meter by label; falling back to first meter"
+        )
         session_block = blocks[0]
     if weekly_block is None and len(blocks) > 1:
+        _LOGGER.warning(
+            "Could not identify a weekly meter by label; falling back to second meter"
+        )
         weekly_block = blocks[1]
 
     if session_block is None and weekly_block is None:
