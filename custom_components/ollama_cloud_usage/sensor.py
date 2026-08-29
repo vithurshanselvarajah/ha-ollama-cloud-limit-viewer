@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry, ConfigEntryType
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -32,6 +33,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         translation_key="session_usage",
         native_unit_of_measurement="%",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         icon="mdi:gauge",
         value_fn=lambda d: d.session_percent,
     ),
@@ -40,6 +42,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         translation_key="session_remaining",
         native_unit_of_measurement="%",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         icon="mdi:gauge-empty",
         value_fn=lambda d: (
             round(100.0 - d.session_percent, 1)
@@ -58,6 +61,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         translation_key="weekly_usage",
         native_unit_of_measurement="%",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         icon="mdi:chart-bar",
         value_fn=lambda d: d.weekly_percent,
     ),
@@ -66,6 +70,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         translation_key="weekly_remaining",
         native_unit_of_measurement="%",
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         icon="mdi:chart-bar-stacked",
         value_fn=lambda d: (
             round(100.0 - d.weekly_percent, 1) if d.weekly_percent is not None else None
@@ -81,6 +86,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         key="model_info",
         translation_key="model_info",
         icon="mdi:robot",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: d.model_note,
     ),
 )
