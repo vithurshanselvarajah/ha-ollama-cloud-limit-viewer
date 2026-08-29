@@ -7,6 +7,7 @@ import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -37,8 +38,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
         try:
             return await fetch_and_parse(session, cookie)
         except OllamaAuthError as err:
-            raise UpdateFailed(
-                f"Authentication failed — cookie may need refreshing: {err}"
+            raise ConfigEntryAuthFailed(
+                f"Cookie expired or invalid — reauth required: {err}"
             ) from err
         except OllamaParseError as err:
             raise UpdateFailed(f"Could not parse usage data: {err}") from err
