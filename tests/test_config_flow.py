@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
-from homeassistant import config_entries, data_entry_flow
-from homeassistant.core import HomeAssistant
 import pytest
 from aiohttp import ClientError
+from homeassistant import config_entries, data_entry_flow
+from homeassistant.core import HomeAssistant
 
 from custom_components.ollama_cloud_usage.const import DOMAIN
 from custom_components.ollama_cloud_usage.scraper import (

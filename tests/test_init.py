@@ -23,9 +23,7 @@ async def test_setup_unload_entry(hass: HomeAssistant):
     )
     entry.add_to_hass(hass)
 
-    with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse"
-    ) as mock_fetch:
+    with patch("custom_components.ollama_cloud_usage.fetch_and_parse") as mock_fetch:
         mock_fetch.return_value = OllamaUsageData(
             session_percent=15.0,
             session_resets_in="2 hours",

@@ -4,7 +4,6 @@ import logging
 from datetime import timedelta
 
 import aiohttp
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -65,9 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
     return True
 
 
-async def _async_update_listener(
-    hass: HomeAssistant, entry: OllamaConfigEntry
-) -> None:
+async def _async_update_listener(hass: HomeAssistant, entry: OllamaConfigEntry) -> None:
     coordinator = entry.runtime_data
     new_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator.update_interval = timedelta(seconds=new_interval)
