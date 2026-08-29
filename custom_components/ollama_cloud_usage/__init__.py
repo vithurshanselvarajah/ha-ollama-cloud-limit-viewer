@@ -58,9 +58,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
 
     entry.runtime_data = coordinator
 
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def _async_update_listener(
+    hass: HomeAssistant, entry: OllamaConfigEntry
+) -> None:
+    coordinator = entry.runtime_data
+    new_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    coordinator.update_interval = timedelta(seconds=new_interval)
+    await coordinator.async_request_refresh()
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
