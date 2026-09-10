@@ -47,6 +47,7 @@ async def test_config_flow_success(hass: HomeAssistant):
             "account_name": "My Account",
             "cookie": "valid_cookie",
             "scan_interval": 120,
+            "usage_mode": "legacy",
         }
 
 
