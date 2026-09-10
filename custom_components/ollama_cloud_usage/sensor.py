@@ -27,7 +27,12 @@ class OllamaSensorDescription(SensorEntityDescription):
     value_fn: Callable[[OllamaUsageData], str | float | None]
 
 
+def _remaining(value: float | None) -> float | None:
+    return round(100.0 - value, 1) if value is not None else None
+
+
 SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
+    # --- Legacy model: session ----------------------------------------------
     OllamaSensorDescription(
         key="session_usage",
         translation_key="session_usage",
@@ -44,11 +49,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         icon="mdi:gauge-empty",
-        value_fn=lambda d: (
-            round(100.0 - d.session_percent, 1)
-            if d.session_percent is not None
-            else None
-        ),
+        value_fn=lambda d: _remaining(d.session_percent),
     ),
     OllamaSensorDescription(
         key="session_resets_in",
@@ -56,6 +57,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         icon="mdi:timer-sand",
         value_fn=lambda d: d.session_resets_in,
     ),
+    # --- Legacy model: weekly ----------------------------------------------
     OllamaSensorDescription(
         key="weekly_usage",
         translation_key="weekly_usage",
@@ -72,9 +74,7 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         icon="mdi:chart-bar-stacked",
-        value_fn=lambda d: (
-            round(100.0 - d.weekly_percent, 1) if d.weekly_percent is not None else None
-        ),
+        value_fn=lambda d: _remaining(d.weekly_percent),
     ),
     OllamaSensorDescription(
         key="weekly_resets_in",
@@ -82,6 +82,47 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         value_fn=lambda d: d.weekly_resets_in,
     ),
+    # --- New model: monthly (Included usage) --------------------------------
+    OllamaSensorDescription(
+        key="monthly_usage",
+        translation_key="monthly_usage",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        icon="mdi:gauge",
+        value_fn=lambda d: d.monthly_percent,
+    ),
+    OllamaSensorDescription(
+        key="monthly_remaining",
+        translation_key="monthly_remaining",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        icon="mdi:gauge-empty",
+        value_fn=lambda d: _remaining(d.monthly_percent),
+    ),
+    OllamaSensorDescription(
+        key="monthly_resets_in",
+        translation_key="monthly_resets_in",
+        icon="mdi:calendar-clock",
+        value_fn=lambda d: d.monthly_resets_in,
+    ),
+    OllamaSensorDescription(
+        key="monthly_resets_at",
+        translation_key="monthly_resets_at",
+        icon="mdi:calendar-arrow-right",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        device_class=None,
+        value_fn=lambda d: d.monthly_resets_at,
+    ),
+    OllamaSensorDescription(
+        key="tier",
+        translation_key="tier",
+        icon="mdi:tag",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda d: d.tier,
+    ),
+    # --- Shared -------------------------------------------------------------
     OllamaSensorDescription(
         key="model_info",
         translation_key="model_info",

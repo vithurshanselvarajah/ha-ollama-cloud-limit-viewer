@@ -12,8 +12,10 @@ from .const import (
     CONF_ACCOUNT_NAME,
     CONF_COOKIE,
     CONF_SCAN_INTERVAL,
+    CONF_USAGE_MODE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    USAGE_MODE_LEGACY,
 )
 from .scraper import OllamaAuthError, OllamaParseError, fetch_and_parse
 
@@ -40,7 +42,7 @@ STEP_RECONFIGURE_DATA_SCHEMA = vol.Schema(
 
 
 class OllamaCloudUsageConfigFlow(ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -69,7 +71,7 @@ class OllamaCloudUsageConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 return self.async_create_entry(
                     title=user_input[CONF_ACCOUNT_NAME],
-                    data=user_input,
+                    data={**user_input, CONF_USAGE_MODE: USAGE_MODE_LEGACY},
                 )
 
         return self.async_show_form(
