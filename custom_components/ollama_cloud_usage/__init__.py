@@ -5,9 +5,8 @@ from datetime import timedelta
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
@@ -19,7 +18,6 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_USAGE_MODE,
     DEFAULT_SCAN_INTERVAL,
-    LEGACY_SENSOR_KEYS,
     USAGE_MODE_LEGACY,
     USAGE_MODE_MONTHLY,
 )
@@ -56,23 +54,6 @@ def _detect_mode(data: OllamaUsageData) -> str | None:
     return None
 
 
-@callback
-def _remove_legacy_entities(hass: HomeAssistant, entry: OllamaConfigEntry) -> None:
-    registry = er.async_get(hass)
-    for key in LEGACY_SENSOR_KEYS:
-        unique_id = f"{entry.entry_id}_{key}"
-        entity_id = registry.async_get_entity_id(
-            "sensor", "ollama_cloud_usage", unique_id
-        )
-        if entity_id:
-            _LOGGER.info(
-                "Removing legacy sensor %s (entry %s) — account transitioned to monthly usage",
-                entity_id,
-                entry.entry_id,
-            )
-            registry.async_remove(entity_id)
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
     cookie = entry.data[CONF_COOKIE]
     scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
@@ -99,11 +80,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
         if detected is not None and detected != current_mode:
             if current_mode == USAGE_MODE_LEGACY and detected == USAGE_MODE_MONTHLY:
                 _LOGGER.info(
-                    "Account %s transitioned from legacy to monthly usage; "
-                    "removing legacy sensors",
+                    "Account %s transitioned from legacy to monthly usage",
                     entry.title,
                 )
-                _remove_legacy_entities(hass, entry)
             current_mode = detected
             hass.config_entries.async_update_entry(
                 entry, data={**entry.data, CONF_USAGE_MODE: current_mode}

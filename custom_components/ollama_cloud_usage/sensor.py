@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -10,6 +11,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,6 +22,29 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import DOMAIN
 from .scraper import OllamaUsageData
+
+_LOGGER = logging.getLogger(__name__)
+
+LEGACY_KEYS: frozenset[str] = frozenset(
+    {
+        "session_usage",
+        "session_remaining",
+        "session_resets_in",
+        "weekly_usage",
+        "weekly_remaining",
+        "weekly_resets_in",
+    }
+)
+
+MONTHLY_KEYS: frozenset[str] = frozenset(
+    {
+        "monthly_usage",
+        "monthly_remaining",
+        "monthly_resets_in",
+        "monthly_resets_at",
+        "tier",
+    }
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -32,7 +57,6 @@ def _remaining(value: float | None) -> float | None:
 
 
 SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
-    # --- Legacy model: session ----------------------------------------------
     OllamaSensorDescription(
         key="session_usage",
         translation_key="session_usage",
@@ -57,7 +81,6 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         icon="mdi:timer-sand",
         value_fn=lambda d: d.session_resets_in,
     ),
-    # --- Legacy model: weekly ----------------------------------------------
     OllamaSensorDescription(
         key="weekly_usage",
         translation_key="weekly_usage",
@@ -82,7 +105,6 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         value_fn=lambda d: d.weekly_resets_in,
     ),
-    # --- New model: monthly (Included usage) --------------------------------
     OllamaSensorDescription(
         key="monthly_usage",
         translation_key="monthly_usage",
@@ -122,7 +144,6 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: d.tier,
     ),
-    # --- Shared -------------------------------------------------------------
     OllamaSensorDescription(
         key="model_info",
         translation_key="model_info",
@@ -133,16 +154,43 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
 )
 
 
+def _purge_legacy_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    registry = er.async_get(hass)
+    for key in LEGACY_KEYS:
+        unique_id = f"{entry.entry_id}_{key}"
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
+        if entity_id:
+            _LOGGER.info(
+                "Removing legacy sensor %s (entry %s) — account is on monthly usage",
+                entity_id,
+                entry.entry_id,
+            )
+            registry.async_remove(entity_id)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: DataUpdateCoordinator[OllamaUsageData] = entry.runtime_data
+    data = coordinator.data
+    if data is not None and data.has_monthly:
+        active_keys: frozenset[str] = MONTHLY_KEYS | frozenset({"model_info"})
+        _purge_legacy_entities(hass, entry)
+    elif data is not None:
+        active_keys = LEGACY_KEYS | frozenset({"model_info"})
+    else:
+        _LOGGER.debug(
+            "Coordinator data unavailable during sensor setup for %s; deferring",
+            entry.title,
+        )
+        return
 
     async_add_entities(
         OllamaUsageSensor(coordinator, entry, description)
         for description in SENSOR_DESCRIPTIONS
+        if description.key in active_keys
     )
 
 
