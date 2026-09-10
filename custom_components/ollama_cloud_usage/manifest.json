@@ -5,11 +5,11 @@
     "@vithusel"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/vithusel/ollama-cloud-usage",
+  "documentation": "https://github.com/vithurshanselvarajah/ha-ollama-cloud-limit-viewer",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/vithusel/ollama-cloud-usage/issues",
+  "issue_tracker": "https://github.com/vithurshanselvarajah/ha-ollama-cloud-limit-viewer/issues",
   "requirements": [
     "beautifulsoup4>=4.12.0"
   ],
-  "version": "1.0.1"
+  "version": "1.1.0"
 }

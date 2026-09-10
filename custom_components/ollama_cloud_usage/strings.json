@@ -58,6 +58,21 @@
       "weekly_resets_in": {
         "name": "Weekly Resets In"
       },
+      "monthly_usage": {
+        "name": "Monthly Usage"
+      },
+      "monthly_remaining": {
+        "name": "Monthly Remaining"
+      },
+      "monthly_resets_in": {
+        "name": "Monthly Resets In"
+      },
+      "monthly_resets_at": {
+        "name": "Monthly Resets At"
+      },
+      "tier": {
+        "name": "Plan Tier"
+      },
       "model_info": {
         "name": "Model Info"
       }

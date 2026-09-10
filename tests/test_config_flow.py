@@ -14,7 +14,6 @@ from custom_components.ollama_cloud_usage.scraper import (
 
 
 async def test_config_flow_success(hass: HomeAssistant):
-    """Test standard successful config flow."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -48,6 +47,7 @@ async def test_config_flow_success(hass: HomeAssistant):
             "account_name": "My Account",
             "cookie": "valid_cookie",
             "scan_interval": 120,
+            "usage_mode": "legacy",
         }
 
 
@@ -61,7 +61,6 @@ async def test_config_flow_success(hass: HomeAssistant):
     ],
 )
 async def test_config_flow_errors(hass: HomeAssistant, exception, expected_error):
-    """Test config flow errors during authentication validation."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )

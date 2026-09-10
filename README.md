@@ -2,13 +2,17 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — **session and weekly limits**, how much is remaining, and when they reset.
+A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — **session, weekly, and monthly (included usage)** limits, how much is remaining, and when they reset.
 
 Ollama doesn't expose an API for this data, so the integration signs in with your browser cookie, fetches the server-rendered settings page, and parses the usage meters out of the HTML.
 
+> **Note:** Ollama is rolling out a new fixed monthly usage model. The integration detects which model your account uses on every refresh and exposes the appropriate sensors automatically. Both models are supported simultaneously — nothing for you to do.
+
 ## Sensors
 
-Each configured account creates the following sensors:
+Each configured account exposes the sensors for **one** of the two usage models below. Ollama's transition from the legacy model to the new monthly model is **one-way**, so once your account moves to the new model the six legacy sensors are **removed from Home Assistant** (not hidden). Make a note of any automations that reference them before the flip.
+
+### Legacy model (session + weekly)
 
 | Sensor | Example Value | Unit | Description |
 |---|---|---|---|
@@ -18,7 +22,29 @@ Each configured account creates the following sensors:
 | Weekly Usage | `80.9` | `%` | Current weekly usage percentage |
 | Weekly Remaining | `19.1` | `%` | How much weekly allowance is left |
 | Weekly Resets In | `3 days` | — | Time until weekly usage resets |
-| Model Info | `gemma3:27b, 369 requests` | — | Models used and request counts |
+
+### New model (monthly, included usage)
+
+| Sensor | Example Value | Unit | Description |
+|---|---|---|---|
+| Monthly Usage | `44.3` | `%` | Current monthly (included) usage percentage |
+| Monthly Remaining | `55.7` | `%` | How much monthly allowance is left |
+| Monthly Resets In | `3 weeks` | — | Time until monthly usage resets |
+| Monthly Resets At | `2026-10-01T21:51:07+00:00` | — | Exact reset datetime (ISO 8601, UTC) |
+| Plan Tier | `free` | — | Your plan tier (e.g. `free`, `pro`, `plus`) |
+
+### Shared
+
+| Sensor | Example Value | Unit | Description |
+|---|---|---|---|
+| Model Info | `gemma4:31b, 331 requests` | — | Models used and request counts |
+
+### Which model is my account on?
+
+- **Legacy (session + weekly):** if you have two separate `data-usage-meter` blocks labelled "Session usage" and "Weekly usage".
+- **New (monthly):** if you have a single "Included usage" section with one meter labelled e.g. "Free usage" / "Pro usage" / "Plus usage".
+
+The integration decides automatically. There's nothing to configure.
 
 ## Installation
 
@@ -42,7 +68,7 @@ Each configured account creates the following sensors:
 3. Enter:
    - **Account Name**: A friendly label (e.g. "Main", "Work")
    - **Cookie String**: Your ollama.com browser cookie (see below)
-   - **Update Interval**: How often to check (default: 300 seconds / 5 minutes)
+   - **Update Interval**: How often to check (default: 120 seconds / 2 minutes)
 
 ### Getting your cookie
 
@@ -68,6 +94,15 @@ To fix:
 ## Multi-Account
 
 You can add multiple ollama.com accounts. Each creates its own device with its own set of sensors. Just run the "Add Integration" flow again with a different account name and cookie.
+
+## Migration from older versions
+
+If you're upgrading from a version that only supported the legacy session/weekly model, your existing entities keep their IDs and history until Ollama transitions your account. The integration detects the new model on every refresh:
+
+- **Legacy account → still legacy:** no change. Legacy sensors continue to work.
+- **Legacy account → transitioned to monthly:** the six legacy sensors (`session_*`, `weekly_*`) are removed from your entity registry on the next refresh. New `monthly_*` and `tier` sensors are added automatically.
+
+> ⚠️ The transition is **one-way**. If you have automations or dashboards that reference `sensor.session_usage` etc., update them to use `sensor.monthly_usage` once your account moves over — the legacy entity IDs will be deleted and HA will not recreate them.
 
 ## License
 

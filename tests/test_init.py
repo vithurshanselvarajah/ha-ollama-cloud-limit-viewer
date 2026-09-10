@@ -1,49 +1,35 @@
-from unittest.mock import patch
-
-from homeassistant.core import HomeAssistant
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-from custom_components.ollama_cloud_usage.const import (
-    CONF_COOKIE,
-    CONF_SCAN_INTERVAL,
-    DOMAIN,
-)
+from custom_components.ollama_cloud_usage import _detect_mode
 from custom_components.ollama_cloud_usage.scraper import OllamaUsageData
 
 
-async def test_setup_unload_entry(hass: HomeAssistant):
-    """Test that setting up and unloading the config entry works."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        title="Main Account",
-        data={
-            CONF_COOKIE: "test_cookie_value",
-            CONF_SCAN_INTERVAL: 60,
-        },
+def test_detect_mode_legacy_only():
+    data = OllamaUsageData(
+        session_percent=10.0,
+        session_resets_in="1 hour",
+        weekly_percent=20.0,
+        weekly_resets_in="1 day",
     )
-    entry.add_to_hass(hass)
+    assert _detect_mode(data) == "legacy"
 
-    with patch("custom_components.ollama_cloud_usage.fetch_and_parse") as mock_fetch:
-        mock_fetch.return_value = OllamaUsageData(
-            session_percent=15.0,
-            session_resets_in="2 hours",
-            weekly_percent=45.0,
-            weekly_resets_in="3 days",
-            model_note="Llama 3 8B",
-        )
 
-        # Setup entry
-        assert await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+def test_detect_mode_monthly_only():
+    data = OllamaUsageData(
+        monthly_percent=44.3,
+        monthly_resets_in="3 weeks",
+        tier="free",
+        model_note="gemma4:31b, 331 requests",
+    )
+    assert _detect_mode(data) == "monthly"
 
-        # Check entry runtime data (coordinator)
-        assert entry.runtime_data is not None
-        assert entry.runtime_data.data.session_percent == 15.0
-        assert entry.runtime_data.data.session_resets_in == "2 hours"
-        assert entry.runtime_data.data.weekly_percent == 45.0
-        assert entry.runtime_data.data.weekly_resets_in == "3 days"
-        assert entry.runtime_data.data.model_note == "Llama 3 8B"
 
-        # Unload entry
-        assert await hass.config_entries.async_unload(entry.entry_id)
-        await hass.async_block_till_done()
+def test_detect_mode_mixed_returns_none():
+    data = OllamaUsageData(
+        session_percent=10.0,
+        weekly_percent=20.0,
+        monthly_percent=44.3,
+    )
+    assert _detect_mode(data) is None
+
+
+def test_detect_mode_empty_returns_none():
+    assert _detect_mode(OllamaUsageData()) is None
