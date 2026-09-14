@@ -3,34 +3,23 @@
     "step": {
       "user": {
         "title": "Add Ollama Account",
-        "description": "Enter your ollama.com account details. To get the cookie: log in to ollama.com → DevTools → Network tab → reload → click the first request → copy the full Cookie header value.",
+        "description": "Enter your ollama.com account details. To get an API key: log in to ollama.com → Settings → API Keys → Create API Key. The key is stored in your Home Assistant config entry.",
         "data": {
           "account_name": "Account Name",
-          "cookie": "Cookie String",
+          "api_key": "API Key",
           "scan_interval": "Update Interval (seconds)"
         },
         "data_description": {
           "account_name": "A friendly name for this account (e.g. Main, Work)",
-          "cookie": "The full Cookie header value from your browser",
-          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
-        }
-      },
-      "reconfigure": {
-        "title": "Update Ollama Cookie",
-        "description": "Paste a fresh cookie string to restore access. Your account name will stay the same.",
-        "data": {
-          "cookie": "Cookie String",
-          "scan_interval": "Update Interval (seconds)"
-        },
-        "data_description": {
-          "cookie": "The full Cookie header value from your browser",
+          "api_key": "An ollama.com API key (Settings, API Keys). Two parts joined by a dot, e.g. 32 hex chars dot 43 chars",
           "scan_interval": "How often to fetch usage data (60–3600 seconds)"
         }
       }
     },
     "error": {
-      "invalid_cookie": "Cookie is invalid or expired — please paste a fresh one",
-      "parse_error": "Connected but could not parse usage data — page structure may have changed",
+      "invalid_api_key": "API key was rejected by ollama.com — check it is valid and not revoked",
+      "parse_error": "Connected but could not parse usage data — API shape may have changed",
+      "api_error": "ollama.com returned an unexpected response",
       "cannot_connect": "Could not connect to ollama.com — check your network",
       "unknown": "An unexpected error occurred"
     },
@@ -40,41 +29,68 @@
   },
   "entity": {
     "sensor": {
-      "session_usage": {
-        "name": "Session Usage"
+      "session_spend": {
+        "name": "Session Spend"
       },
-      "session_remaining": {
-        "name": "Session Remaining"
+      "session_requests": {
+        "name": "Session Requests"
       },
-      "session_resets_in": {
-        "name": "Session Resets In"
+      "session_top_model": {
+        "name": "Session Top Model"
       },
-      "weekly_usage": {
-        "name": "Weekly Usage"
+      "session_model_breakdown": {
+        "name": "Session Models"
       },
-      "weekly_remaining": {
-        "name": "Weekly Remaining"
+      "session_period_start": {
+        "name": "Session Period Start"
       },
-      "weekly_resets_in": {
-        "name": "Weekly Resets In"
+      "session_period_end": {
+        "name": "Session Period End"
       },
-      "monthly_usage": {
-        "name": "Monthly Usage"
+      "session_period_remaining": {
+        "name": "Session Time Remaining"
       },
-      "monthly_remaining": {
-        "name": "Monthly Remaining"
+      "weekly_spend": {
+        "name": "Weekly Spend"
       },
-      "monthly_resets_in": {
-        "name": "Monthly Resets In"
+      "weekly_requests": {
+        "name": "Weekly Requests"
       },
-      "monthly_resets_at": {
-        "name": "Monthly Resets At"
+      "weekly_top_model": {
+        "name": "Weekly Top Model"
       },
-      "tier": {
-        "name": "Plan Tier"
+      "weekly_model_breakdown": {
+        "name": "Weekly Models"
       },
-      "model_info": {
-        "name": "Model Info"
+      "weekly_period_start": {
+        "name": "Weekly Period Start"
+      },
+      "weekly_period_end": {
+        "name": "Weekly Period End"
+      },
+      "weekly_period_remaining": {
+        "name": "Weekly Time Remaining"
+      },
+      "last_4_weeks_spend": {
+        "name": "Last 4 Weeks Spend"
+      },
+      "last_4_weeks_requests": {
+        "name": "Last 4 Weeks Requests"
+      },
+      "last_4_weeks_top_model": {
+        "name": "Last 4 Weeks Top Model"
+      },
+      "last_4_weeks_model_breakdown": {
+        "name": "Last 4 Weeks Models"
+      },
+      "last_4_weeks_period_start": {
+        "name": "Last 4 Weeks Period Start"
+      },
+      "last_4_weeks_period_end": {
+        "name": "Last 4 Weeks Period End"
+      },
+      "last_4_weeks_period_remaining": {
+        "name": "Last 4 Weeks Time Remaining"
       }
     }
   }

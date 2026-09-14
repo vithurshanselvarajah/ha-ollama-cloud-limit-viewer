@@ -2,14 +2,12 @@
   "domain": "ollama_cloud_usage",
   "name": "Ollama Cloud Usage",
   "codeowners": [
-    "@vithusel"
+    "@vithurshanselvarajah"
   ],
   "config_flow": true,
   "documentation": "https://github.com/vithurshanselvarajah/ha-ollama-cloud-limit-viewer",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/vithurshanselvarajah/ha-ollama-cloud-limit-viewer/issues",
-  "requirements": [
-    "beautifulsoup4>=4.12.0"
-  ],
-  "version": "1.1.1"
+  "requirements": [],
+  "version": "2.0.0"
 }

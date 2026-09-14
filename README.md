@@ -2,49 +2,78 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — **session, weekly, and monthly (included usage)** limits, how much is remaining, and when they reset.
+A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — money spent per window, request counts, the model that used the most, and when each window resets.
 
-Ollama doesn't expose an API for this data, so the integration signs in with your browser cookie, fetches the server-rendered settings page, and parses the usage meters out of the HTML.
-
-> **Note:** Ollama is rolling out a new fixed monthly usage model. The integration detects which model your account uses on every refresh and exposes the appropriate sensors automatically. Both models are supported simultaneously — nothing for you to do.
+The integration talks to Ollama's API (`GET /api/usage`) using an API key — no browser cookie scraping.
 
 ## Sensors
 
-Each configured account exposes the sensors for **one** of the two usage models below. Ollama's transition from the legacy model to the new monthly model is **one-way**, so once your account moves to the new model the six legacy sensors are **removed from Home Assistant** (not hidden). Make a note of any automations that reference them before the flip.
+Each configured account exposes the sensors for every usage window that the API returns. The API exposes up to three windows:
 
-### Legacy model (session + weekly)
+- **`session`** — the current in-flight session window
+- **`weekly`** — the rolling weekly window
+- **`activity` (last 4 weeks)** — the activity window reported under `activity` in the response
 
-| Sensor | Example Value | Unit | Description |
-|---|---|---|---|
-| Session Usage | `45.8` | `%` | Current session usage percentage |
-| Session Remaining | `54.2` | `%` | How much session allowance is left |
-| Session Resets In | `4 hours` | — | Time until session usage resets |
-| Weekly Usage | `80.9` | `%` | Current weekly usage percentage |
-| Weekly Remaining | `19.1` | `%` | How much weekly allowance is left |
-| Weekly Resets In | `3 days` | — | Time until weekly usage resets |
+A window that is absent from the API response simply produces no sensors.
 
-### New model (monthly, included usage)
+### Per-window sensors
+
+For each window that exists (e.g. `session_*`, `weekly_*`, `last_4_weeks_*`):
 
 | Sensor | Example Value | Unit | Description |
 |---|---|---|---|
-| Monthly Usage | `44.3` | `%` | Current monthly (included) usage percentage |
-| Monthly Remaining | `55.7` | `%` | How much monthly allowance is left |
-| Monthly Resets In | `3 weeks` | — | Time until monthly usage resets |
-| Monthly Resets At | `2026-10-01T21:51:07+00:00` | — | Exact reset datetime (ISO 8601, UTC) |
-| Plan Tier | `free` | — | Your plan tier (e.g. `free`, `pro`, `plus`) |
+| Spend | `0.02500` | `USD` | Money spent in this window (cumulative) |
+| Requests | `180` | — | Total requests in this window |
+| Top Model | `minimax-m3` | — | The model with the most requests in this window |
+| Models | `minimax-m3 (176), gemma4:31b (4)` | — | Every model and its request count |
+| Period Start | `2026-09-14T00:00:00+00:00` | — | Window start (ISO 8601, UTC) |
+| Period End | `2026-09-14T21:52:52+00:00` | — | Window end (ISO 8601, UTC) |
+| Time Remaining | `0` | `s` | Seconds until the window ends |
 
-### Shared
+### When does `Period Start` / `Period End` show up?
 
-| Sensor | Example Value | Unit | Description |
-|---|---|---|---|
-| Model Info | `gemma4:31b, 331 requests` | — | Models used and request counts |
+The Ollama API only reports reset boundaries for the `last_4_weeks` (activity) window. For `session` and `weekly`, the integration **predicts** the resets locally and shows them in those sensors:
 
-### Which model is my account on?
+- **Session** resets on fixed 5-hour UTC buckets: `00:00`, `05:00`, `10:00`, `15:00`, `20:00`.
+- **Weekly** resets every **Monday at 00:00 UTC**.
 
-- **Legacy (session + weekly):** if you have two separate `data-usage-meter` blocks labelled "Session usage" and "Weekly usage".
-- **New (monthly):** if you have a single "Included usage" section with one meter labelled e.g. "Free usage" / "Pro usage" / "Plus usage".
+The integration doesn't start predicting until it has actually observed a real reset for that window — the first time the API reports `usage` dropping by more than 50% from the previous sample, it snaps to the current bucket as the anchor. Until that happens, the four `session_*_period_*` / `weekly_*_period_*` sensors stay **unknown**. This avoids showing a fake "next reset at 5 PM" that has nothing to do with when Ollama actually resets your session.
 
-The integration decides automatically. There's nothing to configure.
+Once anchored, the watchdog keeps verifying on every refresh — if Ollama moves the bucket (say they shift session buckets from 5h to 6h), the next observed reset just re-anchors to the new boundary and the predictions update automatically.
+
+### Example API response
+
+```json
+{
+  "activity": {
+    "cost": "0.00000",
+    "period": {
+      "type": "last_4_weeks",
+      "starting_at": "2026-08-24T00:00:00Z",
+      "ending_at": "2026-09-14T21:52:52.558286586Z"
+    },
+    "models": []
+  },
+  "limits": {
+    "session": {
+      "usage": 0.001,
+      "models": [
+        {"name": "minimax-m3", "request_count": 1},
+        {"name": "gemma4:31b", "request_count": 2}
+      ]
+    },
+    "weekly": {
+      "usage": 0.025,
+      "models": [
+        {"name": "minimax-m3", "request_count": 176},
+        {"name": "gemma4:31b", "request_count": 4}
+      ]
+    }
+  }
+}
+```
+
+→ produces `session_spend = 0.001 USD`, `weekly_spend = 0.025 USD`, `last_4_weeks_spend = 0.0 USD`, and per-window model breakdowns.
 
 ## Installation
 
@@ -67,42 +96,38 @@ The integration decides automatically. There's nothing to configure.
 2. Search for **Ollama Cloud Usage**
 3. Enter:
    - **Account Name**: A friendly label (e.g. "Main", "Work")
-   - **Cookie String**: Your ollama.com browser cookie (see below)
+   - **API Key**: An ollama.com API key (see below)
    - **Update Interval**: How often to check (default: 120 seconds / 2 minutes)
 
-### Getting your cookie
+### Getting an API key
 
-1. Log in to [ollama.com](https://ollama.com) in your browser
-2. Open **DevTools** (F12) → **Network** tab
-3. Reload the page
-4. Click the first document request (`settings` or `ollama.com`)
-5. Under **Request Headers**, find the `Cookie:` line
-6. Copy the **entire value** and paste it into the setup form
+1. Log in to [ollama.com](https://ollama.com)
+2. Open **Settings → API Keys**
+3. Click **Create API Key** (or equivalent), give it a name, copy the value
+4. Paste it into the setup form
 
-> **Tip**: Cookies usually last weeks to months. When one expires, the sensors will become unavailable. Use the integration's **Reconfigure** option to paste a fresh cookie — no need to delete and re-add the account.
+> **Tip:** API keys don't expire the way browser cookies do, but you can revoke them from the same page at any time. If you revoke a key, the sensors will become **unavailable** — delete the existing entry and re-add the integration with a new key.
 
-## Cookie Expired?
+## API key revoked?
 
-When a cookie expires, the sensors will show as **unavailable** in Home Assistant.
+When an API key is rejected (HTTP 401/403), the sensors will show as **unavailable** in Home Assistant and the entry will be marked for re-auth.
 
 To fix:
-1. Go to **Settings → Devices & Services**
-2. Find your Ollama Cloud Usage entry
-3. Click the three dots menu → **Reconfigure**
-4. Paste your fresh cookie string
+
+1. Generate a fresh API key on ollama.com
+2. Delete the existing Ollama Cloud Usage entry from **Settings → Devices & Services**
+3. Re-add the integration with the new key
 
 ## Multi-Account
 
-You can add multiple ollama.com accounts. Each creates its own device with its own set of sensors. Just run the "Add Integration" flow again with a different account name and cookie.
+You can add multiple ollama.com accounts. Each creates its own device with its own set of sensors. Just run the "Add Integration" flow again with a different account name and API key.
 
-## Migration from older versions
+## Migration from v1 (cookie auth)
 
-If you're upgrading from a version that only supported the legacy session/weekly model, your existing entities keep their IDs and history until Ollama transitions your account. The integration detects the new model on every refresh:
+Version 2.0 is a clean break from v1.x. The old integration scraped the settings page using your browser cookie; v2 uses Ollama's official API.
 
-- **Legacy account → still legacy:** no change. Legacy sensors continue to work.
-- **Legacy account → transitioned to monthly:** the six legacy sensors (`session_*`, `weekly_*`) are removed from your entity registry on the next refresh. New `monthly_*` and `tier` sensors are added automatically.
-
-> ⚠️ The transition is **one-way**. If you have automations or dashboards that reference `sensor.session_usage` etc., update them to use `sensor.monthly_usage` once your account moves over — the legacy entity IDs will be deleted and HA will not recreate them.
+- v1 entries are **not** auto-migrated. Delete any v1 entries and add a fresh integration with your API key.
+- v1 sensor entity IDs (`sensor.session_usage`, etc.) no longer exist — rewrite any automations or dashboards to use the new sensor IDs.
 
 ## License
 

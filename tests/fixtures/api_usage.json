@@ -1,0 +1,27 @@
+{
+  "activity": {
+    "cost": "0.00000",
+    "period": {
+      "type": "last_4_weeks",
+      "starting_at": "2026-08-24T00:00:00Z",
+      "ending_at": "2026-09-14T21:52:52.558286586Z"
+    },
+    "models": []
+  },
+  "limits": {
+    "session": {
+      "usage": 0.001,
+      "models": [
+        {"name": "minimax-m3", "request_count": 1},
+        {"name": "gemma4:31b", "request_count": 2}
+      ]
+    },
+    "weekly": {
+      "usage": 0.025,
+      "models": [
+        {"name": "minimax-m3", "request_count": 176},
+        {"name": "gemma4:31b", "request_count": 4}
+      ]
+    }
+  }
+}
