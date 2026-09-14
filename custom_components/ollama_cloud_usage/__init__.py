@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -13,20 +13,19 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import (
-    CONF_COOKIE,
-    CONF_SCAN_INTERVAL,
-    CONF_USAGE_MODE,
-    DEFAULT_SCAN_INTERVAL,
-    USAGE_MODE_LEGACY,
-    USAGE_MODE_MONTHLY,
-)
-from .scraper import (
+from .api import (
+    OllamaApiError,
     OllamaAuthError,
     OllamaParseError,
     OllamaUsageData,
     fetch_and_parse,
 )
+from .const import (
+    CONF_API_KEY,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+)
+from .resets import SessionResetTracker, WeeklyResetTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,64 +34,55 @@ PLATFORMS: list[str] = ["sensor"]
 type OllamaConfigEntry = ConfigEntry[DataUpdateCoordinator[OllamaUsageData]]
 
 
-async def async_migrate_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
-    if entry.version > 2:
-        return False
-    if entry.version < 2:
-        new_data = {**entry.data, CONF_USAGE_MODE: USAGE_MODE_LEGACY}
-        hass.config_entries.async_update_entry(
-            entry, data=new_data, version=2, minor_version=1
-        )
-    return True
+def _apply_reset_predictions(
+    data: OllamaUsageData,
+    session_tracker: SessionResetTracker,
+    weekly_tracker: WeeklyResetTracker,
+    now: datetime,
+) -> None:
+    if data.session is not None:
+        session_tracker.observe(data.session.usage_usd, now)
+        if session_tracker.has_anchor:
+            end = session_tracker.next_reset(now)
+            if end is not None:
+                start = end - timedelta(hours=SessionResetTracker.BUCKET_HOURS)
+                data.session.predicted_start = start
+                data.session.predicted_end = end
 
-
-def _detect_mode(data: OllamaUsageData) -> str | None:
-    if data.has_monthly and not data.has_legacy:
-        return USAGE_MODE_MONTHLY
-    if data.has_legacy and not data.has_monthly:
-        return USAGE_MODE_LEGACY
-    return None
+    if data.weekly is not None:
+        weekly_tracker.observe(data.weekly.usage_usd, now)
+        if weekly_tracker.has_anchor:
+            end = weekly_tracker.next_reset(now)
+            if end is not None:
+                start = end - timedelta(days=7)
+                data.weekly.predicted_start = start
+                data.weekly.predicted_end = end
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
-    cookie = entry.data[CONF_COOKIE]
+    api_key = entry.data[CONF_API_KEY]
     scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    current_mode = entry.data.get(CONF_USAGE_MODE)
     session = async_get_clientsession(hass)
-
-    async def _async_update() -> OllamaUsageData:
-        return await fetch_and_parse(session, cookie)
+    session_tracker = SessionResetTracker()
+    weekly_tracker = WeeklyResetTracker()
 
     async def _async_update_with_handling() -> OllamaUsageData:
         try:
-            data = await _async_update()
+            data = await fetch_and_parse(session, api_key)
         except OllamaAuthError as err:
             raise ConfigEntryAuthFailed(
-                f"Cookie expired or invalid — reauth required: {err}"
+                f"API key rejected by ollama.com: {err}"
             ) from err
         except OllamaParseError as err:
             raise UpdateFailed(f"Could not parse usage data: {err}") from err
+        except OllamaApiError as err:
+            raise UpdateFailed(f"Ollama API error: {err}") from err
         except (aiohttp.ClientError, TimeoutError) as err:
             raise UpdateFailed(f"Could not connect to ollama.com: {err}") from err
 
-        nonlocal current_mode
-        detected = _detect_mode(data)
-        if detected is not None and detected != current_mode:
-            if current_mode == USAGE_MODE_LEGACY and detected == USAGE_MODE_MONTHLY:
-                _LOGGER.info(
-                    "Account %s transitioned from legacy to monthly usage",
-                    entry.title,
-                )
-            current_mode = detected
-            hass.config_entries.async_update_entry(
-                entry, data={**entry.data, CONF_USAGE_MODE: current_mode}
-            )
-        elif current_mode is None:
-            current_mode = detected or USAGE_MODE_LEGACY
-            hass.config_entries.async_update_entry(
-                entry, data={**entry.data, CONF_USAGE_MODE: current_mode}
-            )
-
+        _apply_reset_predictions(
+            data, session_tracker, weekly_tracker, datetime.now(UTC)
+        )
         return data
 
     coordinator: DataUpdateCoordinator[OllamaUsageData] = DataUpdateCoordinator(
