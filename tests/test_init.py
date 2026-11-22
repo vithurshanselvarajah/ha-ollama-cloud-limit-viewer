@@ -194,6 +194,37 @@ async def test_sensors_marked_unavailable_after_failed_update(hass: HomeAssistan
     assert entry.state is ConfigEntryState.SETUP_ERROR
 
 
+async def test_stale_entities_are_removed(hass: HomeAssistant):
+    entry = _entry()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        return_value=_legacy_data(),
+    ):
+        await hass.config_entries.async_add(entry)
+        await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    stale = registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_weekly_spend_legacy",
+        config_entry=entry,
+        suggested_object_id="stale",
+    )
+    assert stale.entity_id in registry.entities
+
+    with patch(
+        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        return_value=_credit_data(),
+    ):
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert stale.entity_id not in registry.entities
+    assert "weekly_requests" not in _keys(hass, entry)
+
+
 async def test_options_override_scan_interval(hass: HomeAssistant):
     entry = _entry()
 

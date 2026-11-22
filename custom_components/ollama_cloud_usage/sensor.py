@@ -14,6 +14,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -379,12 +380,28 @@ async def async_setup_entry(
         return
 
     active_keys = _available_keys(data)
+    _async_remove_stale_entities(hass, entry, active_keys)
 
     async_add_entities(
         OllamaUsageSensor(coordinator, entry, description)
         for description in SENSOR_DESCRIPTIONS
         if description.key in active_keys
     )
+
+
+def _async_remove_stale_entities(
+    hass: HomeAssistant, entry: ConfigEntry, active_keys: set[str]
+) -> None:
+    registry = er.async_get(hass)
+    for registry_entry in list(
+        er.async_entries_for_config_entry(registry, entry.entry_id)
+    ):
+        unique_id = registry_entry.unique_id
+        if not unique_id or not unique_id.startswith(f"{entry.entry_id}_"):
+            continue
+        if unique_id.removeprefix(f"{entry.entry_id}_") in active_keys:
+            continue
+        registry.async_remove(registry_entry.entity_id)
 
 
 class OllamaUsageSensor(
