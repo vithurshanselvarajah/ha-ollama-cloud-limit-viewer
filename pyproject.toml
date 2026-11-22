@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ha-ollama-cloud-limit-viewer"
-version = "2.0.0"
+version = "3.0.0"
 description = "Home Assistant custom integration for Ollama cloud usage limit viewing"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,9 +25,9 @@ dependencies = []
 
 [project.optional-dependencies]
 test = [
-    "pytest>=8.0.0",
-    "pytest-homeassistant-custom-component>=0.13.0",
-    "pytest-asyncio>=0.23.0",
+    "pytest>=9.0.0",
+    "pytest-homeassistant-custom-component>=0.13.375",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [tool.setuptools.packages.find]

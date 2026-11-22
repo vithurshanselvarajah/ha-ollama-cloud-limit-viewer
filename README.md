@@ -2,78 +2,107 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — money spent per window, request counts, the model that used the most, and when each window resets.
+A Home Assistant custom integration that shows your [ollama.com](https://ollama.com) cloud usage as sensors — remaining quota per window, request counts, the model that used the most, when each window resets, and how much credit you have left.
 
-The integration talks to Ollama's API (`GET /api/usage`) using an API key — no browser cookie scraping.
+The integration talks to Ollama's official cloud API using an API key — no browser cookie scraping.
 
-## Sensors
+## API endpoints
 
-Each configured account exposes the sensors for every usage window that the API returns. The API exposes up to three windows:
+| Endpoint | Purpose |
+|---|---|
+| `GET https://ollama.com/api/usage?range=30d&group_by=model` | Request counts, cost and token usage, bucketed by hour or day |
+| `GET https://ollama.com/api/balance` | Remaining included quota, purchased credits and reset times |
 
-- **`session`** — the current in-flight session window
-- **`weekly`** — the rolling weekly window
-- **`activity` (last 4 weeks)** — the activity window reported under `activity` in the response
+Both endpoints allow **10 requests per minute per user**, shared across API keys and devices. The integration polls every 120 seconds by default and issues one request per endpoint per poll, which stays comfortably inside the limit. A `429` response is honoured via the `Retry-After` header.
 
-A window that is absent from the API response simply produces no sensors.
+## Plan types
 
-### Per-window sensors
+Ollama serves two different plan shapes, and the integration supports both.
 
-For each window that exists (e.g. `session_*`, `weekly_*`, `last_4_weeks_*`):
-
-| Sensor | Example Value | Unit | Description |
-|---|---|---|---|
-| Spend | `0.02500` | `USD` | Money spent in this window (cumulative) |
-| Requests | `180` | — | Total requests in this window |
-| Top Model | `minimax-m3` | — | The model with the most requests in this window |
-| Models | `minimax-m3 (176), gemma4:31b (4)` | — | Every model and its request count |
-| Period Start | `2026-09-14T00:00:00+00:00` | — | Window start (ISO 8601, UTC) |
-| Period End | `2026-09-14T21:52:52+00:00` | — | Window end (ISO 8601, UTC) |
-| Time Remaining | `0` | `s` | Seconds until the window ends |
-
-### When does `Period Start` / `Period End` show up?
-
-The Ollama API only reports reset boundaries for the `last_4_weeks` (activity) window. For `session` and `weekly`, the integration **predicts** the resets locally and shows them in those sensors:
-
-- **Session** resets on fixed 5-hour UTC buckets: `00:00`, `05:00`, `10:00`, `15:00`, `20:00`.
-- **Weekly** resets every **Monday at 00:00 UTC**.
-
-The integration doesn't start predicting until it has actually observed a real reset for that window — the first time the API reports `usage` dropping by more than 50% from the previous sample, it snaps to the current bucket as the anchor. Until that happens, the four `session_*_period_*` / `weekly_*_period_*` sensors stay **unknown**. This avoids showing a fake "next reset at 5 PM" that has nothing to do with when Ollama actually resets your session.
-
-Once anchored, the watchdog keeps verifying on every refresh — if Ollama moves the bucket (say they shift session buckets from 5h to 6h), the next observed reset just re-anchors to the new boundary and the predictions update automatically.
-
-### Example API response
+### Legacy plans (session + weekly limits)
 
 ```json
 {
-  "activity": {
-    "cost": "0.00000",
-    "period": {
-      "type": "last_4_weeks",
-      "starting_at": "2026-08-24T00:00:00Z",
-      "ending_at": "2026-09-14T21:52:52.558286586Z"
-    },
-    "models": []
+  "included": {
+    "session": {"remaining_percent": 78.5, "resets_at": "2026-11-23T00:00:00Z"},
+    "weekly": {"remaining_percent": 71.2, "resets_at": "2026-11-23T00:00:00Z"}
   },
-  "limits": {
-    "session": {
-      "usage": 0.001,
-      "models": [
-        {"name": "minimax-m3", "request_count": 1},
-        {"name": "gemma4:31b", "request_count": 2}
-      ]
-    },
-    "weekly": {
-      "usage": 0.025,
-      "models": [
-        {"name": "minimax-m3", "request_count": 176},
-        {"name": "gemma4:31b", "request_count": 4}
-      ]
-    }
-  }
+  "purchased": {"balance_usd": 0}
 }
 ```
 
-→ produces `session_spend = 0.001 USD`, `weekly_spend = 0.025 USD`, `last_4_weeks_spend = 0.0 USD`, and per-window model breakdowns.
+Legacy plans are limited by request count rather than by spend. Ollama does not report cost or token usage for them, so the **spend** sensors are not created and the **remaining** sensors are the ones to watch.
+
+### Credit plans (monthly USD allowance)
+
+```json
+{
+  "included": {
+    "balance_usd": 72.5,
+    "allowance_usd": 100,
+    "period": {"from": "2026-09-15T09:30:00Z", "until": "2026-10-15T09:30:00Z"}
+  },
+  "purchased": {"balance_usd": 25}
+}
+```
+
+Credit plans report a monthly allowance. The **session** and **weekly** windows do not exist, so those sensors are not created and the **balance** sensors are the ones to watch.
+
+Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them.
+
+## Sensors
+
+### Usage windows
+
+| Sensor | Unit | Description |
+|---|---|---|
+| `session_requests` | — | Requests in the current session window |
+| `session_spend` | `USD` | Cost in the current session window |
+| `session_remaining` | `%` | Session quota remaining |
+| `session_top_model` | — | Model with the most requests in the session |
+| `session_models` | — | Every model and its request count in the session |
+| `session_period_start` | — | Session window start (timestamp) |
+| `session_period_end` | — | When the session resets (timestamp) |
+| `session_time_remaining` | `s` | Seconds until the session resets |
+| `weekly_requests` | — | Requests in the current weekly window |
+| `weekly_spend` | `USD` | Cost in the current weekly window |
+| `weekly_remaining` | `%` | Weekly quota remaining |
+| `weekly_top_model` | — | Model with the most requests in the week |
+| `weekly_models` | — | Every model and its request count in the week |
+| `weekly_period_start` | — | Weekly window start (timestamp) |
+| `weekly_period_end` | — | When the weekly quota resets (timestamp) |
+| `weekly_time_remaining` | `s` | Seconds until the weekly quota resets |
+| `last_4_weeks_requests` | — | Requests in the last 4 weeks |
+| `last_4_weeks_spend` | `USD` | Cost in the last 4 weeks |
+| `last_4_weeks_top_model` | — | Model with the most requests in the last 4 weeks |
+| `last_4_weeks_models` | — | Every model and its request count in the last 4 weeks |
+| `last_4_weeks_period_start` | — | Start of the 4 week window (timestamp) |
+| `last_4_weeks_period_end` | — | End of the 4 week window (timestamp) |
+
+The `last_4_weeks_*` window is always available. The `session_*` and `weekly_*` windows depend on your plan.
+
+### Balance
+
+| Sensor | Unit | Description |
+|---|---|---|
+| `included_balance` | `USD` | Included credit left this period |
+| `included_allowance` | `USD` | Total included credit for the period |
+| `purchased_balance` | `USD` | Remaining purchased credits |
+| `included_period_start` | — | Start of the included period (timestamp) |
+| `included_period_end` | — | End of the included period (timestamp) |
+| `included_time_remaining` | `s` | Seconds until the included period ends |
+
+`purchased_balance` is available on every plan. The other balance sensors need a credit plan.
+
+### How the windows are derived
+
+The usage API returns buckets, not named windows, so the integration derives each window from the reset times the balance API reports:
+
+- **Session** — the window ending at `included.session.resets_at`.
+- **Weekly** — the window ending at `included.weekly.resets_at`.
+- **Last 4 weeks** — the 28 days ending at the current time.
+
+Because the reset times come straight from Ollama, no local reset prediction is needed and there is nothing to re-anchor.
 
 ## Installation
 
@@ -99,6 +128,8 @@ Once anchored, the watchdog keeps verifying on every refresh — if Ollama moves
    - **API Key**: An ollama.com API key (see below)
    - **Update Interval**: How often to check (default: 120 seconds / 2 minutes)
 
+The update interval can also be changed later through the integration's **Configure** button, without removing and re-adding the entry.
+
 ### Getting an API key
 
 1. Log in to [ollama.com](https://ollama.com)
@@ -106,28 +137,21 @@ Once anchored, the watchdog keeps verifying on every refresh — if Ollama moves
 3. Click **Create API Key** (or equivalent), give it a name, copy the value
 4. Paste it into the setup form
 
-> **Tip:** API keys don't expire the way browser cookies do, but you can revoke them from the same page at any time. If you revoke a key, the sensors will become **unavailable** — delete the existing entry and re-add the integration with a new key.
-
 ## API key revoked?
 
-When an API key is rejected (HTTP 401/403), the sensors will show as **unavailable** in Home Assistant and the entry will be marked for re-auth.
-
-To fix:
-
-1. Generate a fresh API key on ollama.com
-2. Delete the existing Ollama Cloud Usage entry from **Settings → Devices & Services**
-3. Re-add the integration with the new key
+When an API key is rejected (HTTP 401/403), the sensors become **unavailable** and Home Assistant starts a re-authentication flow asking for a new key. Enter the new key and the entry reloads itself — you do not need to delete and re-add the integration.
 
 ## Multi-Account
 
 You can add multiple ollama.com accounts. Each creates its own device with its own set of sensors. Just run the "Add Integration" flow again with a different account name and API key.
 
-## Migration from v1 (cookie auth)
+## Migration from v2
 
-Version 2.0 is a clean break from v1.x. The old integration scraped the settings page using your browser cookie; v2 uses Ollama's official API.
+Version 3.0 replaces the retired `/api/usage` response shape with Ollama's current `/api/usage` and `/api/balance` endpoints.
 
-- v1 entries are **not** auto-migrated. Delete any v1 entries and add a fresh integration with your API key.
-- v1 sensor entity IDs (`sensor.session_usage`, etc.) no longer exist — rewrite any automations or dashboards to use the new sensor IDs.
+- The `session_spend`, `weekly_spend` and `last_4_weeks_spend` sensors keep their names, but on legacy plans Ollama no longer reports cost, so they are not created there.
+- The `session_period_*` and `weekly_period_*` sensors now report the real reset times from the balance API instead of locally predicted ones.
+- New sensors for the remaining quota, credit balances and purchased credits have been added.
 
 ## License
 
