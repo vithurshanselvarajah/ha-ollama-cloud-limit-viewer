@@ -1,0 +1,111 @@
+{
+  "entity": {
+    "sensor": {
+      "session_requests": {
+        "default": "mdi:counter"
+      },
+      "session_spend": {
+        "default": "mdi:cash-clock"
+      },
+      "session_remaining": {
+        "default": "mdi:gauge"
+      },
+      "session_top_model": {
+        "default": "mdi:robot"
+      },
+      "session_input_tokens": {
+        "default": "mdi:token"
+      },
+      "session_cached_input_tokens": {
+        "default": "mdi:package-variant-closed"
+      },
+      "session_output_tokens": {
+        "default": "mdi:arrow-top-right"
+      },
+      "session_cache_hit_ratio": {
+        "default": "mdi:percent"
+      },
+      "session_model_spend_breakdown": {
+        "default": "mdi:currency-usd"
+      },
+      "session_other_model_requests": {
+        "default": "mdi:dots-horizontal"
+      },
+      "session_model_breakdown": {
+        "default": "mdi:format-list-bulleted"
+      },
+      "weekly_requests": {
+        "default": "mdi:counter"
+      },
+      "weekly_spend": {
+        "default": "mdi:cash-multiple"
+      },
+      "weekly_remaining": {
+        "default": "mdi:gauge"
+      },
+      "weekly_top_model": {
+        "default": "mdi:robot"
+      },
+      "weekly_input_tokens": {
+        "default": "mdi:token"
+      },
+      "weekly_cached_input_tokens": {
+        "default": "mdi:package-variant-closed"
+      },
+      "weekly_output_tokens": {
+        "default": "mdi:arrow-top-right"
+      },
+      "weekly_cache_hit_ratio": {
+        "default": "mdi:percent"
+      },
+      "weekly_model_spend_breakdown": {
+        "default": "mdi:currency-usd"
+      },
+      "weekly_other_model_requests": {
+        "default": "mdi:dots-horizontal"
+      },
+      "weekly_model_breakdown": {
+        "default": "mdi:format-list-bulleted"
+      },
+      "last_4_weeks_requests": {
+        "default": "mdi:counter"
+      },
+      "last_4_weeks_spend": {
+        "default": "mdi:cash-sync"
+      },
+      "last_4_weeks_top_model": {
+        "default": "mdi:robot"
+      },
+      "last_4_weeks_input_tokens": {
+        "default": "mdi:token"
+      },
+      "last_4_weeks_cached_input_tokens": {
+        "default": "mdi:package-variant-closed"
+      },
+      "last_4_weeks_output_tokens": {
+        "default": "mdi:arrow-top-right"
+      },
+      "last_4_weeks_cache_hit_ratio": {
+        "default": "mdi:percent"
+      },
+      "last_4_weeks_model_spend_breakdown": {
+        "default": "mdi:currency-usd"
+      },
+      "last_4_weeks_other_model_requests": {
+        "default": "mdi:dots-horizontal"
+      },
+      "last_4_weeks_model_breakdown": {
+        "default": "mdi:format-list-bulleted"
+      },
+      "included_balance": {
+        "default": "mdi:credit-card-outline"
+      },
+      "included_allowance": {
+        "default": "mdi:credit-card-check-outline"
+      },
+      "purchased_balance": {
+        "default": "mdi:wallet"
+      }
+    }
+  }
+}

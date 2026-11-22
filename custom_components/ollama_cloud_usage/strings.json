@@ -207,5 +207,11 @@
         "name": "last_4_weeks_other_model_requests"
       }
     }
+  },
+  "issues": {
+    "team_scope_unavailable": {
+      "title": "Team usage is not available",
+      "description": "The API key for {account_name} is not a team admin, so ollama.com refuses team-wide usage. Personal usage is shown instead. Change the usage scope back to personal, or use an API key of a team admin."
+    }
   }
 }

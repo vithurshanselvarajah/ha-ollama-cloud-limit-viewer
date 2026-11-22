@@ -57,6 +57,17 @@ class ModelUsage:
     cached_input_tokens: int | None = None
     output_tokens: int | None = None
 
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialisable representation."""
+        return {
+            "model": self.name,
+            "request_count": self.request_count,
+            "usage_usd": self.usage_usd,
+            "input_tokens": self.input_tokens,
+            "cached_input_tokens": self.cached_input_tokens,
+            "output_tokens": self.output_tokens,
+        }
+
 
 @dataclass
 class UsageWindow:
@@ -93,6 +104,25 @@ class UsageWindow:
     def other_model_requests(self) -> int:
         """Requests attributed to models outside the reported group list."""
         return self.remainder_request_count
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialisable representation."""
+        return {
+            "label": self.label,
+            "request_count": self.request_count,
+            "usage_usd": self.usage_usd,
+            "input_tokens": self.input_tokens,
+            "cached_input_tokens": self.cached_input_tokens,
+            "output_tokens": self.output_tokens,
+            "remaining_percent": self.remaining_percent,
+            "period_type": self.period_type,
+            "starting_at": self.starting_at.isoformat() if self.starting_at else None,
+            "ending_at": self.ending_at.isoformat() if self.ending_at else None,
+            "resets_at": self.resets_at.isoformat() if self.resets_at else None,
+            "cache_hit_ratio": self.cache_hit_ratio,
+            "remainder_request_count": self.remainder_request_count,
+            "models": [model.to_dict() for model in self.models],
+        }
 
 
 @dataclass
@@ -161,6 +191,34 @@ class BalanceReport:
     def is_credit_plan(self) -> bool:
         return self.included_balance_usd is not None
 
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialisable representation."""
+        return {
+            "included_balance_usd": self.included_balance_usd,
+            "included_allowance_usd": self.included_allowance_usd,
+            "included_period_start": (
+                self.included_period_start.isoformat()
+                if self.included_period_start
+                else None
+            ),
+            "included_period_end": (
+                self.included_period_end.isoformat()
+                if self.included_period_end
+                else None
+            ),
+            "purchased_balance_usd": self.purchased_balance_usd,
+            "session_remaining_percent": self.session_remaining_percent,
+            "session_resets_at": (
+                self.session_resets_at.isoformat() if self.session_resets_at else None
+            ),
+            "weekly_remaining_percent": self.weekly_remaining_percent,
+            "weekly_resets_at": (
+                self.weekly_resets_at.isoformat() if self.weekly_resets_at else None
+            ),
+            "is_legacy_plan": self.is_legacy_plan,
+            "is_credit_plan": self.is_credit_plan,
+        }
+
 
 @dataclass
 class OllamaUsageData:
@@ -173,6 +231,16 @@ class OllamaUsageData:
     @property
     def windows(self) -> list[UsageWindow]:
         return [w for w in (self.session, self.weekly, self.activity) if w is not None]
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a serialisable representation."""
+        return {
+            "scope": self.scope,
+            "session": self.session.to_dict() if self.session else None,
+            "weekly": self.weekly.to_dict() if self.weekly else None,
+            "activity": self.activity.to_dict() if self.activity else None,
+            "balance": self.balance.to_dict() if self.balance else None,
+        }
 
 
 def _retry_after_seconds(resp: aiohttp.ClientResponse) -> int | None:

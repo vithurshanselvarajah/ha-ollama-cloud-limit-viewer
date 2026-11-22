@@ -27,7 +27,9 @@ from .const import (
     CONF_SCOPE,
     DEFAULT_SCAN_INTERVAL,
     SCOPE_SELF,
+    SCOPE_TEAM,
 )
+from .repairs import async_create_team_scope_issue, async_delete_team_scope_issue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class OllamaCoordinator(DataUpdateCoordinator[OllamaUsageData]):
     async def _async_update_data(self) -> OllamaUsageData:
         """Fetch the latest usage data."""
         try:
-            return await fetch_and_parse(
+            data = await fetch_and_parse(
                 self._session, self._api_key, scope=scope(self.config_entry)
             )
         except OllamaAuthError as err:
@@ -74,6 +76,23 @@ class OllamaCoordinator(DataUpdateCoordinator[OllamaUsageData]):
             raise UpdateFailed(f"Ollama API error: {err}") from err
         except (aiohttp.ClientError, TimeoutError) as err:
             raise UpdateFailed(f"Could not connect to ollama.com: {err}") from err
+
+        self._async_update_team_scope_issue(data)
+        return data
+
+    @callback
+    def _async_update_team_scope_issue(self, data: OllamaUsageData) -> None:
+        """Raise or clear the issue about team scope not being available."""
+        requested = scope(self.config_entry) == SCOPE_TEAM
+        available = data.scope == SCOPE_TEAM
+        if requested and not available:
+            async_create_team_scope_issue(
+                self.hass,
+                self.config_entry.entry_id,
+                self.config_entry.title,
+            )
+        else:
+            async_delete_team_scope_issue(self.hass, self.config_entry.entry_id)
 
     @callback
     def _async_update_listener(self) -> None:

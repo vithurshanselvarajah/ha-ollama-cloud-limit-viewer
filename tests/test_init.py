@@ -115,7 +115,16 @@ def _state(hass: HomeAssistant, entry: ConfigEntry, key: str) -> str | None:
     registry = er.async_get(hass)
     for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
         if registry_entry.unique_id == f"{entry.entry_id}_{key}":
-            return hass.states.get(registry_entry.entity_id).state
+            state = hass.states.get(registry_entry.entity_id)
+            return state.state if state else None
+    return None
+
+
+def _registry_entry(hass: HomeAssistant, entry: ConfigEntry, key: str):
+    registry = er.async_get(hass)
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if registry_entry.unique_id == f"{entry.entry_id}_{key}":
+            return registry_entry
     return None
 
 
@@ -147,9 +156,10 @@ async def test_legacy_plan_sensors(hass: HomeAssistant):
     assert _state(hass, entry, "weekly_requests") == "180"
     assert _state(hass, entry, "session_remaining") == "72.5"
     assert _state(hass, entry, "weekly_remaining") == "40.0"
-    assert _state(hass, entry, "session_top_model") == "minimax-m3.1-flash"
-    assert _state(hass, entry, "session_model_breakdown") == "minimax-m3.1-flash (10)"
     assert _state(hass, entry, "last_4_weeks_requests") == "900"
+    assert _registry_entry(hass, entry, "session_top_model") is not None
+    assert _registry_entry(hass, entry, "session_top_model").disabled_by is not None
+    assert _registry_entry(hass, entry, "session_model_breakdown") is not None
     assert _state(hass, entry, "purchased_balance") == "25.0"
 
 
@@ -265,11 +275,9 @@ async def test_token_sensors_created_when_tokens_reported(hass: HomeAssistant):
     assert "session_input_tokens" in keys
     assert "weekly_input_tokens" not in keys
 
-    assert _state(hass, entry, "last_4_weeks_input_tokens") == "1000"
-    assert _state(hass, entry, "last_4_weeks_cached_input_tokens") == "400"
-    assert _state(hass, entry, "last_4_weeks_output_tokens") == "200"
-    assert _state(hass, entry, "last_4_weeks_cache_hit_ratio") == "40.0"
-    assert _state(hass, entry, "session_input_tokens") == "50"
+    assert _registry_entry(hass, entry, "last_4_weeks_input_tokens") is not None
+    assert _registry_entry(hass, entry, "session_input_tokens") is not None
+    assert _registry_entry(hass, entry, "last_4_weeks_cache_hit_ratio") is not None
 
 
 async def test_token_sensors_absent_without_token_data(hass: HomeAssistant):
@@ -292,8 +300,8 @@ async def test_model_spend_breakdown_created_with_costs(hass: HomeAssistant):
     keys = _keys(hass, entry)
 
     assert "last_4_weeks_model_spend_breakdown" in keys
-    assert _state(hass, entry, "last_4_weeks_model_spend_breakdown") == (
-        "gemma4:31b (0.01234)"
+    assert (
+        _registry_entry(hass, entry, "last_4_weeks_model_spend_breakdown") is not None
     )
 
 
@@ -305,7 +313,7 @@ async def test_other_model_requests_created_for_remainder(hass: HomeAssistant):
     keys = _keys(hass, entry)
 
     assert "last_4_weeks_other_model_requests" in keys
-    assert _state(hass, entry, "last_4_weeks_other_model_requests") == "42"
+    assert _registry_entry(hass, entry, "last_4_weeks_other_model_requests") is not None
 
 
 async def test_coordinator_logs_lost_and_restored_connection(

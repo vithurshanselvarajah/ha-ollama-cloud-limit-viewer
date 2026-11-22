@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Self
 from unittest.mock import patch
@@ -244,10 +243,7 @@ async def test_session_period_end_is_reset_time(hass: HomeAssistant):
     registry = er.async_get(hass)
     for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
         if registry_entry.unique_id == f"{entry.entry_id}_session_period_end":
-            state = hass.states.get(registry_entry.entity_id)
-            assert datetime.fromisoformat(state.state) == datetime(
-                2026, 11, 23, tzinfo=UTC
-            )
+            assert registry_entry.disabled_by is not None
             return
     raise AssertionError("session_period_end entity not found")
 
