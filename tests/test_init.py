@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
+from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -339,3 +341,72 @@ async def test_coordinator_logs_lost_and_restored_connection(
         await hass.async_block_till_done()
 
     assert "Connection to ollama.com restored" in caplog.text
+
+
+async def test_setup_skips_sensors_without_data(hass: HomeAssistant):
+    entry = _entry()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        return_value=_legacy_data(),
+    ):
+        await hass.config_entries.async_add(entry)
+        await hass.async_block_till_done()
+
+    coordinator = entry.runtime_data
+    coordinator.data = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_sensor_value_is_none_without_data(hass: HomeAssistant):
+    entry = await _setup_entry(hass, _legacy_data())
+
+    coordinator = entry.runtime_data
+    coordinator.data = None
+
+    registry = er.async_get(hass)
+    platform = entity_platform.async_get_platforms(hass, DOMAIN)[0]
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if registry_entry.unique_id == f"{entry.entry_id}_session_requests":
+            entity = platform.entities.get(registry_entry.entity_id)
+            assert entity is not None
+            assert entity.native_value is None
+            return
+    raise AssertionError("session_requests entity not found")
+
+
+async def test_entities_from_other_integrations_are_left_alone(hass: HomeAssistant):
+    entry = await _setup_entry(hass, _legacy_data())
+
+    registry = er.async_get(hass)
+    foreign = registry.async_get_or_create(
+        "sensor",
+        "other_domain",
+        "foreign_unique_id",
+        suggested_object_id="foreign_sensor",
+    )
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        return_value=_credit_data(),
+    ):
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert foreign.entity_id in registry.entities
+
+
+async def test_coordinator_reports_connection_errors(hass: HomeAssistant):
+    entry = _entry()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        side_effect=ClientError("no route"),
+    ):
+        await hass.config_entries.async_add(entry)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY

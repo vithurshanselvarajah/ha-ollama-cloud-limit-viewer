@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -26,8 +24,3 @@ class OllamaUsageEntity(CoordinatorEntity[OllamaCoordinator]):
             model="Cloud Usage",
             entry_type=DeviceEntryType.SERVICE,
         )
-
-    @property
-    def native_value(self) -> str | float | int | datetime | None:
-        """Return the value of the entity."""
-        return None

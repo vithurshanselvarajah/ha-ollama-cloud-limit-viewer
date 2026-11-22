@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
 from custom_components.ollama_cloud_usage.api import (
     ModelUsage,
     OllamaParseError,
+    OllamaUsageData,
     UsageBucket,
     UsageReport,
     UsageSummary,
@@ -234,9 +236,6 @@ def test_build_session_window_without_session_limit():
 
 
 def test_every_sensor_is_documented_in_readme():
-    import json
-    from pathlib import Path
-
     root = Path(__file__).parent.parent
     readme = (root / "README.md").read_text()
     strings = json.loads(
@@ -414,3 +413,112 @@ def test_cache_hit_ratio_is_none_without_tokens():
     window = UsageWindow(label="session", request_count=5)
 
     assert window.cache_hit_ratio is None
+
+
+def test_coerce_float_accepts_strings_and_rejects_others():
+    from custom_components.ollama_cloud_usage.api import _coerce_float
+
+    assert _coerce_float("1.5") == pytest.approx(1.5)
+    assert _coerce_float(2) == pytest.approx(2.0)
+    assert _coerce_float(True) is None
+    assert _coerce_float("nope") is None
+    assert _coerce_float(None) is None
+
+
+def test_coerce_int_accepts_floats_and_strings():
+    from custom_components.ollama_cloud_usage.api import _coerce_int
+
+    assert _coerce_int(3.9) == 3
+    assert _coerce_int("7") == 7
+    assert _coerce_int(True) is None
+    assert _coerce_int("nope") is None
+    assert _coerce_int(None) is None
+
+
+def test_parse_timestamp_assumes_utc_when_naive():
+    from custom_components.ollama_cloud_usage.api import _parse_timestamp
+
+    parsed = _parse_timestamp("2026-11-23T00:00:00", field_name="from")
+
+    assert parsed == datetime(2026, 11, 23, tzinfo=UTC)
+
+
+def test_parse_models_rejects_bad_shapes():
+    from custom_components.ollama_cloud_usage.api import _parse_models
+
+    with pytest.raises(OllamaParseError):
+        _parse_models("nope")
+    with pytest.raises(OllamaParseError):
+        _parse_models(["nope"])
+    with pytest.raises(OllamaParseError):
+        _parse_models([{"request_count": 3}])
+    with pytest.raises(OllamaParseError):
+        _parse_models([{"model": "a", "request_count": "many"}])
+    assert _parse_models(None) == []
+
+
+def test_parse_buckets_rejects_bad_shapes():
+    from custom_components.ollama_cloud_usage.api import _parse_buckets
+
+    with pytest.raises(OllamaParseError):
+        _parse_buckets({"buckets": "nope"})
+    with pytest.raises(OllamaParseError):
+        _parse_buckets({"buckets": ["nope"]})
+    assert _parse_buckets({}) == []
+
+
+def test_parse_usage_rejects_non_dict_totals():
+    with pytest.raises(OllamaParseError):
+        parse_usage({"totals": "nope"})
+
+
+def test_parse_balance_rejects_bad_purchased():
+    with pytest.raises(OllamaParseError):
+        parse_balance({"included": {"balance_usd": 1}, "purchased": "nope"})
+
+
+def test_parse_balance_rejects_non_dict_included():
+    with pytest.raises(OllamaParseError):
+        parse_balance({"included": "nope"})
+
+
+def test_usage_data_windows_skips_missing():
+    data = OllamaUsageData(session=UsageWindow(label="session", request_count=1))
+
+    assert [w.label for w in data.windows] == ["session"]
+    assert OllamaUsageData().windows == []
+
+
+def test_retry_after_ignores_non_numeric_header():
+    from custom_components.ollama_cloud_usage.api import _retry_after_seconds
+
+    class _Resp:
+        headers: ClassVar[dict[str, str]] = {"Retry-After": "soon"}
+
+    assert _retry_after_seconds(_Resp()) is None
+
+
+def test_retry_after_returns_none_when_missing():
+    from custom_components.ollama_cloud_usage.api import _retry_after_seconds
+
+    class _Resp:
+        headers: ClassVar[dict[str, str]] = {}
+
+    assert _retry_after_seconds(_Resp()) is None
+
+
+def test_parse_timestamp_rejects_non_string():
+    from custom_components.ollama_cloud_usage.api import _parse_timestamp
+
+    with pytest.raises(OllamaParseError):
+        _parse_timestamp(123, field_name="from")
+    with pytest.raises(OllamaParseError):
+        _parse_timestamp("", field_name="from")
+
+
+def test_parse_legacy_limit_rejects_non_dict():
+    from custom_components.ollama_cloud_usage.api import _parse_legacy_limit
+
+    with pytest.raises(OllamaParseError):
+        _parse_legacy_limit("nope", field_name="included.session")
+    assert _parse_legacy_limit(None, field_name="included.session") is None

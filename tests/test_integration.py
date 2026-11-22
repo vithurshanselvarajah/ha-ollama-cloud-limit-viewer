@@ -289,3 +289,71 @@ async def test_team_scope_is_used_when_allowed(hass: HomeAssistant):
 
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.data.scope == "team"
+
+
+async def test_end_to_end_server_error(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_FakeResponse(500, {"error": "boom"}, {})],
+            "usage": [],
+        }
+    )
+
+    entry = await _setup(hass, session)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_end_to_end_non_object_payload(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_FakeResponse(200, ["not", "an", "object"], {})],
+            "usage": [],
+        }
+    )
+
+    entry = await _setup(hass, session)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_end_to_end_retry_after_header_is_used(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [
+                _FakeResponse(429, {"error": "slow down"}, {"Retry-After": "90"})
+            ],
+            "usage": [],
+        }
+    )
+
+    entry = await _setup(hass, session)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_end_to_end_missing_retry_after_header(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_FakeResponse(429, {"error": "slow down"}, {})],
+            "usage": [],
+        }
+    )
+
+    entry = await _setup(hass, session)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_end_to_end_connection_error(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_FakeResponse(200, {"error": "boom"}, {})],
+            "usage": [],
+        }
+    )
+    session.get = lambda url, **kwargs: _FakeResponse(200, {"error": "boom"}, {})
+
+    entry = await _setup(hass, session)
+
+    assert entry.state is ConfigEntryState.SETUP_RETRY
