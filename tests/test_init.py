@@ -241,3 +241,65 @@ async def test_options_override_scan_interval(hass: HomeAssistant):
     await hass.async_block_till_done()
 
     assert entry.runtime_data.update_interval == timedelta(seconds=60)
+
+
+async def test_token_sensors_created_when_tokens_reported(hass: HomeAssistant):
+    data = _credit_data()
+    data.activity.input_tokens = 1000
+    data.activity.cached_input_tokens = 400
+    data.activity.output_tokens = 200
+    data.session.input_tokens = 50
+    data.session.cached_input_tokens = 10
+    data.session.output_tokens = 5
+    entry = await _setup_entry(hass, data)
+
+    keys = _keys(hass, entry)
+
+    assert "last_4_weeks_input_tokens" in keys
+    assert "last_4_weeks_cached_input_tokens" in keys
+    assert "last_4_weeks_output_tokens" in keys
+    assert "last_4_weeks_cache_hit_ratio" in keys
+    assert "session_input_tokens" in keys
+    assert "weekly_input_tokens" not in keys
+
+    assert _state(hass, entry, "last_4_weeks_input_tokens") == "1000"
+    assert _state(hass, entry, "last_4_weeks_cached_input_tokens") == "400"
+    assert _state(hass, entry, "last_4_weeks_output_tokens") == "200"
+    assert _state(hass, entry, "last_4_weeks_cache_hit_ratio") == "40.0"
+    assert _state(hass, entry, "session_input_tokens") == "50"
+
+
+async def test_token_sensors_absent_without_token_data(hass: HomeAssistant):
+    entry = await _setup_entry(hass, _credit_data())
+
+    keys = _keys(hass, entry)
+
+    assert "last_4_weeks_input_tokens" not in keys
+    assert "last_4_weeks_cache_hit_ratio" not in keys
+    assert "session_output_tokens" not in keys
+
+
+async def test_model_spend_breakdown_created_with_costs(hass: HomeAssistant):
+    data = _credit_data()
+    data.activity.models = [
+        ModelUsage(name="gemma4:31b", request_count=5, usage_usd=0.01234)
+    ]
+    entry = await _setup_entry(hass, data)
+
+    keys = _keys(hass, entry)
+
+    assert "last_4_weeks_model_spend_breakdown" in keys
+    assert _state(hass, entry, "last_4_weeks_model_spend_breakdown") == (
+        "gemma4:31b (0.01234)"
+    )
+
+
+async def test_other_model_requests_created_for_remainder(hass: HomeAssistant):
+    data = _credit_data()
+    data.activity.remainder_request_count = 42
+    entry = await _setup_entry(hass, data)
+
+    keys = _keys(hass, entry)
+
+    assert "last_4_weeks_other_model_requests" in keys
+    assert _state(hass, entry, "last_4_weeks_other_model_requests") == "42"

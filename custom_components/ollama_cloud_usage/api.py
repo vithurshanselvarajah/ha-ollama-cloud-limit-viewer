@@ -84,10 +84,10 @@ class UsageWindow:
 
     @property
     def cache_hit_ratio(self) -> float | None:
-        """Share of input tokens that were served from the prompt cache."""
+        """Share of input tokens that were served from the prompt cache, in percent."""
         if not self.input_tokens or self.cached_input_tokens is None:
             return None
-        return self.cached_input_tokens / self.input_tokens
+        return self.cached_input_tokens / self.input_tokens * 100
 
     @property
     def other_model_requests(self) -> int:

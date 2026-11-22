@@ -403,7 +403,7 @@ def test_window_aggregates_tokens_and_cache_ratio():
     assert window.input_tokens == 1000
     assert window.cached_input_tokens == 400
     assert window.output_tokens == 200
-    assert window.cache_hit_ratio == pytest.approx(0.4)
+    assert window.cache_hit_ratio == pytest.approx(40.0)
     assert window.remainder_request_count == 40
     assert window.other_model_requests == 40
     assert window.models[0].usage_usd == pytest.approx(0.9)
