@@ -214,3 +214,69 @@ async def test_options_flow_updates_scan_interval(hass: HomeAssistant):
         "scan_interval": 300,
         "scope": "team",
     }
+
+
+async def test_reconfigure_flow_replaces_api_key(hass: HomeAssistant):
+    await hass.config_entries.async_add(
+        MockConfigEntry(
+            domain=DOMAIN,
+            title="My Account",
+            unique_id="my account",
+            version=3,
+            data={
+                "account_name": "My Account",
+                "api_key": "old_key",
+                "scan_interval": 120,
+            },
+        )
+    )
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    with patch(
+        "custom_components.ollama_cloud_usage.config_flow.fetch_and_parse",
+        return_value=OllamaUsageData(),
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"api_key": "new_key"}
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == data_entry_flow.FlowResultType.ABORT
+    assert result2["reason"] == "reconfigure_successful"
+    assert entry.data["api_key"] == "new_key"
+
+
+async def test_reconfigure_flow_reports_invalid_key(hass: HomeAssistant):
+    await hass.config_entries.async_add(
+        MockConfigEntry(
+            domain=DOMAIN,
+            title="My Account",
+            unique_id="my account",
+            version=3,
+            data={
+                "account_name": "My Account",
+                "api_key": "old_key",
+                "scan_interval": 120,
+            },
+        )
+    )
+
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    result = await entry.start_reconfigure_flow(hass)
+
+    with patch(
+        "custom_components.ollama_cloud_usage.config_flow.fetch_and_parse",
+        side_effect=OllamaAuthError("Unauthorized"),
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"api_key": "bad_key"}
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == data_entry_flow.FlowResultType.FORM
+    assert result2["errors"] == {"base": "invalid_api_key"}
+    assert entry.data["api_key"] == "old_key"
