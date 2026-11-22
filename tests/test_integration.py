@@ -103,10 +103,10 @@ async def test_end_to_end_legacy_plan(hass: HomeAssistant):
 
     assert entry.state is ConfigEntryState.LOADED
     assert len(session.calls) == 3
-    assert _state(hass, entry, "weekly_requests") == "6027"
-    assert _state(hass, entry, "session_remaining") == "78.56"
-    assert _state(hass, entry, "weekly_remaining") == "71.2"
-    assert _state(hass, entry, "last_4_weeks_requests") == "26380"
+    assert _state(hass, entry, "weekly_requests") == "6236"
+    assert _state(hass, entry, "session_remaining") == "73.6"
+    assert _state(hass, entry, "weekly_remaining") == "70.32"
+    assert _state(hass, entry, "last_4_weeks_requests") == "26589"
     assert _state(hass, entry, "purchased_balance") == "0.0"
 
 

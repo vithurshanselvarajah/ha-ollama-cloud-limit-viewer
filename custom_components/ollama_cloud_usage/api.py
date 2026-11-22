@@ -481,6 +481,7 @@ def _floor_to_hour(value: datetime) -> datetime:
 
 
 def build_activity_window(report: UsageReport) -> UsageWindow:
+    """The last 28 days, matching the documented `30d` range minus two days."""
     end = report.ending_at
     start = _floor_to_day(end - ACTIVITY_WINDOW)
     return _window_from_buckets(
@@ -492,29 +493,10 @@ def build_activity_window(report: UsageReport) -> UsageWindow:
     )
 
 
-def build_legacy_session_window(
-    hourly: UsageReport,
-    balance: BalanceReport,
-) -> UsageWindow | None:
-    if balance.session_remaining_percent is None:
-        return None
-    end = balance.session_resets_at or hourly.ending_at
-    start = _floor_to_hour(end - SESSION_WINDOW)
-    window = _window_from_buckets(
-        hourly.buckets,
-        label="session",
-        period_type="session",
-        start=start,
-        end=end,
-    )
-    window.remaining_percent = balance.session_remaining_percent
-    window.resets_at = balance.session_resets_at
-    return window
-
-
-def build_legacy_weekly_window(
+def build_weekly_window(
     report: UsageReport, balance: BalanceReport
 ) -> UsageWindow | None:
+    """The seven days ending at the weekly reset reported by the balance API."""
     if balance.weekly_remaining_percent is None:
         return None
     end = balance.weekly_resets_at or report.ending_at
@@ -531,7 +513,32 @@ def build_legacy_weekly_window(
     return window
 
 
+def build_session_window(
+    hourly: UsageReport, balance: BalanceReport
+) -> UsageWindow | None:
+    """The session window ending at the session reset reported by the balance API.
+
+    Ollama rotates the session limit on a seven hour UTC grid, so the reset
+    time is what anchors the window.
+    """
+    if balance.session_remaining_percent is None:
+        return None
+    end = balance.session_resets_at or hourly.ending_at
+    start = _floor_to_hour(end - SESSION_WINDOW)
+    window = _window_from_buckets(
+        hourly.buckets,
+        label="session",
+        period_type="session",
+        start=start,
+        end=end,
+    )
+    window.remaining_percent = balance.session_remaining_percent
+    window.resets_at = balance.session_resets_at
+    return window
+
+
 def build_credit_session_window(hourly: UsageReport) -> UsageWindow:
+    """Credit plans have no session limit, so the last seven hours are used."""
     end = hourly.ending_at
     start = _floor_to_hour(end - SESSION_WINDOW)
     return _window_from_buckets(
@@ -561,8 +568,8 @@ async def fetch_and_parse(
     data.activity = build_activity_window(daily)
 
     if balance.is_legacy_plan:
-        data.session = build_legacy_session_window(hourly, balance)
-        data.weekly = build_legacy_weekly_window(daily, balance)
+        data.session = build_session_window(hourly, balance)
+        data.weekly = build_weekly_window(daily, balance)
     else:
         data.session = build_credit_session_window(hourly)
 

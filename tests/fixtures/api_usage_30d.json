@@ -4,13 +4,13 @@
   "granularity": "day",
   "group_by": "model",
   "from": "2026-10-23T00:00:00Z",
-  "until": "2026-11-22T21:42:00.969579437Z",
+  "until": "2026-11-22T22:17:56.463395954Z",
   "totals": {
-    "request_count": 26381,
+    "request_count": 26590,
     "groups": [
       {
         "model": "minimax-m3.1-flash",
-        "request_count": 22738
+        "request_count": 22947
       },
       {
         "model": "minimax-m3",
@@ -363,13 +363,13 @@
     },
     {
       "from": "2026-11-22T00:00:00Z",
-      "until": "2026-11-22T21:42:00.969579437Z",
+      "until": "2026-11-22T22:17:56.463395954Z",
       "partial": true,
-      "request_count": 1895,
+      "request_count": 2104,
       "groups": [
         {
           "model": "minimax-m3.1-flash",
-          "request_count": 1880
+          "request_count": 2089
         },
         {
           "model": "deepseek-v4.1-flash:1017",

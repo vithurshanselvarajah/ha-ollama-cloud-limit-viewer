@@ -1,11 +1,11 @@
 {
   "included": {
     "session": {
-      "remaining_percent": 78.56,
+      "remaining_percent": 73.6,
       "resets_at": "2026-11-23T00:00:00Z"
     },
     "weekly": {
-      "remaining_percent": 71.2,
+      "remaining_percent": 70.32,
       "resets_at": "2026-11-23T00:00:00Z"
     }
   },

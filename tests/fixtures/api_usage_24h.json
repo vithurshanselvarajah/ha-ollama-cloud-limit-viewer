@@ -3,14 +3,14 @@
   "scope": "self",
   "granularity": "hour",
   "group_by": "model",
-  "from": "2026-11-21T21:00:00Z",
-  "until": "2026-11-22T21:42:01.492777077Z",
+  "from": "2026-11-21T22:00:00Z",
+  "until": "2026-11-22T22:17:58.931380867Z",
   "totals": {
-    "request_count": 1895,
+    "request_count": 2104,
     "groups": [
       {
         "model": "minimax-m3.1-flash",
-        "request_count": 1880
+        "request_count": 2089
       },
       {
         "model": "gemma4:31b",
@@ -23,12 +23,6 @@
     ]
   },
   "buckets": [
-    {
-      "from": "2026-11-21T21:00:00Z",
-      "until": "2026-11-21T22:00:00Z",
-      "request_count": 0,
-      "groups": []
-    },
     {
       "from": "2026-11-21T22:00:00Z",
       "until": "2026-11-21T23:00:00Z",
@@ -241,13 +235,24 @@
     },
     {
       "from": "2026-11-22T21:00:00Z",
-      "until": "2026-11-22T21:42:01.492777077Z",
-      "partial": true,
-      "request_count": 97,
+      "until": "2026-11-22T22:00:00Z",
+      "request_count": 224,
       "groups": [
         {
           "model": "minimax-m3.1-flash",
-          "request_count": 97
+          "request_count": 224
+        }
+      ]
+    },
+    {
+      "from": "2026-11-22T22:00:00Z",
+      "until": "2026-11-22T22:17:58.931380867Z",
+      "partial": true,
+      "request_count": 82,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 82
         }
       ]
     }

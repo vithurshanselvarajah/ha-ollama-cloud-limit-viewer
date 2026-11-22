@@ -1,0 +1,122 @@
+{
+  "range": "7d",
+  "scope": "self",
+  "granularity": "day",
+  "group_by": "model",
+  "from": "2026-11-15T00:00:00Z",
+  "until": "2026-11-22T22:17:57.710976228Z",
+  "totals": {
+    "request_count": 6236,
+    "groups": [
+      {
+        "model": "minimax-m3.1-flash",
+        "request_count": 6192
+      },
+      {
+        "model": "gemma4:31b",
+        "request_count": 42
+      },
+      {
+        "model": "deepseek-v4.1-flash:1017",
+        "request_count": 2
+      }
+    ]
+  },
+  "buckets": [
+    {
+      "from": "2026-11-15T00:00:00Z",
+      "until": "2026-11-16T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-11-16T00:00:00Z",
+      "until": "2026-11-17T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-11-17T00:00:00Z",
+      "until": "2026-11-18T00:00:00Z",
+      "request_count": 715,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 715
+        }
+      ]
+    },
+    {
+      "from": "2026-11-18T00:00:00Z",
+      "until": "2026-11-19T00:00:00Z",
+      "request_count": 955,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 955
+        }
+      ]
+    },
+    {
+      "from": "2026-11-19T00:00:00Z",
+      "until": "2026-11-20T00:00:00Z",
+      "request_count": 1253,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1253
+        }
+      ]
+    },
+    {
+      "from": "2026-11-20T00:00:00Z",
+      "until": "2026-11-21T00:00:00Z",
+      "request_count": 782,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 764
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 18
+        }
+      ]
+    },
+    {
+      "from": "2026-11-21T00:00:00Z",
+      "until": "2026-11-22T00:00:00Z",
+      "request_count": 427,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 416
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 11
+        }
+      ]
+    },
+    {
+      "from": "2026-11-22T00:00:00Z",
+      "until": "2026-11-22T22:17:57.710976228Z",
+      "partial": true,
+      "request_count": 2104,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 2089
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 13
+        },
+        {
+          "model": "deepseek-v4.1-flash:1017",
+          "request_count": 2
+        }
+      ]
+    }
+  ]
+}

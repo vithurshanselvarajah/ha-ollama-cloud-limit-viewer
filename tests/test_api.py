@@ -9,9 +9,10 @@ import pytest
 from custom_components.ollama_cloud_usage.api import (
     OllamaParseError,
     UsageReport,
+    _sum_models,
     build_activity_window,
-    build_legacy_session_window,
-    build_legacy_weekly_window,
+    build_session_window,
+    build_weekly_window,
     parse_balance,
     parse_usage,
 )
@@ -113,9 +114,9 @@ def test_parse_balance_legacy_plan():
 
     assert report.is_legacy_plan is True
     assert report.is_credit_plan is False
-    assert report.session_remaining_percent == pytest.approx(78.56)
+    assert report.session_remaining_percent == pytest.approx(73.6)
     assert report.session_resets_at == datetime(2026, 11, 23, tzinfo=UTC)
-    assert report.weekly_remaining_percent == pytest.approx(71.2)
+    assert report.weekly_remaining_percent == pytest.approx(70.32)
     assert report.purchased_balance_usd == pytest.approx(0)
 
 
@@ -182,10 +183,10 @@ def test_build_activity_window_covers_28_days():
     assert window.total_requests == sum(m.request_count for m in window.models)
 
 
-def test_build_legacy_session_window_uses_balance_reset():
+def test_build_session_window_uses_balance_reset():
     hourly = _usage_report("api_usage_24h.json")
     balance = parse_balance(_load("api_balance_legacy.json"))
-    window = build_legacy_session_window(hourly, balance)
+    window = build_session_window(hourly, balance)
 
     assert window is not None
     assert window.period_type == "session"
@@ -195,10 +196,10 @@ def test_build_legacy_session_window_uses_balance_reset():
     assert window.starting_at == balance.session_resets_at - timedelta(hours=7)
 
 
-def test_build_legacy_weekly_window_uses_balance_reset():
+def test_build_weekly_window_uses_balance_reset():
     report = _usage_report("api_usage_30d.json")
     balance = parse_balance(_load("api_balance_legacy.json"))
-    window = build_legacy_weekly_window(report, balance)
+    window = build_weekly_window(report, balance)
 
     assert window is not None
     assert window.period_type == "weekly"
@@ -207,7 +208,7 @@ def test_build_legacy_weekly_window_uses_balance_reset():
     assert window.starting_at == balance.weekly_resets_at - timedelta(days=7)
 
 
-def test_build_legacy_session_window_without_session_limit():
+def test_build_session_window_without_session_limit():
     hourly = _usage_report("api_usage_24h.json")
     daily = _usage_report("api_usage_30d.json")
     balance = parse_balance(
@@ -224,8 +225,8 @@ def test_build_legacy_session_window_without_session_limit():
         }
     )
 
-    assert build_legacy_session_window(hourly, balance) is None
-    assert build_legacy_weekly_window(daily, balance) is None
+    assert build_session_window(hourly, balance) is None
+    assert build_weekly_window(daily, balance) is None
 
 
 def test_every_sensor_is_documented_in_readme():
@@ -240,3 +241,35 @@ def test_every_sensor_is_documented_in_readme():
 
     undocumented = [key for key in strings["entity"]["sensor"] if key not in readme]
     assert not undocumented
+
+
+def test_derived_seven_day_window_matches_api_range():
+    daily = _usage_report("api_usage_30d.json")
+    seven = _usage_report("api_usage_7d.json")
+
+    start = daily.ending_at.replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) - timedelta(days=7)
+    selected = [
+        bucket
+        for bucket in daily.buckets
+        if bucket.starting_at >= start and bucket.starting_at < daily.ending_at
+    ]
+
+    assert (
+        sum(bucket.request_count for bucket in selected) == seven.totals.request_count
+    )
+    assert {m.name: m.request_count for m in _sum_models(selected)} == {
+        m.name: m.request_count for m in _sum_models(seven.buckets)
+    }
+
+
+def test_weekly_window_equals_api_seven_day_range():
+    daily = _usage_report("api_usage_30d.json")
+    seven = _usage_report("api_usage_7d.json")
+    balance = parse_balance(_load("api_balance_legacy.json"))
+
+    window = build_weekly_window(daily, balance)
+
+    assert window is not None
+    assert window.request_count == seven.totals.request_count
