@@ -226,3 +226,17 @@ def test_build_legacy_session_window_without_session_limit():
 
     assert build_legacy_session_window(hourly, balance) is None
     assert build_legacy_weekly_window(daily, balance) is None
+
+
+def test_every_sensor_is_documented_in_readme():
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).parent.parent
+    readme = (root / "README.md").read_text()
+    strings = json.loads(
+        (root / "custom_components" / "ollama_cloud_usage" / "strings.json").read_text()
+    )
+
+    undocumented = [key for key in strings["entity"]["sensor"] if key not in readme]
+    assert not undocumented

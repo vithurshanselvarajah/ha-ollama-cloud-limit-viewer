@@ -54,52 +54,54 @@ Sensors that do not apply to your plan are simply never created — you will not
 
 ### Usage windows
 
-| Sensor | Unit | Description |
-|---|---|---|
-| `session_requests` | — | Requests in the current session window |
-| `session_spend` | `USD` | Cost in the current session window |
-| `session_remaining` | `%` | Session quota remaining |
-| `session_top_model` | — | Model with the most requests in the session |
-| `session_models` | — | Every model and its request count in the session |
-| `session_period_start` | — | Session window start (timestamp) |
-| `session_period_end` | — | When the session resets (timestamp) |
-| `session_time_remaining` | `s` | Seconds until the session resets |
-| `weekly_requests` | — | Requests in the current weekly window |
-| `weekly_spend` | `USD` | Cost in the current weekly window |
-| `weekly_remaining` | `%` | Weekly quota remaining |
-| `weekly_top_model` | — | Model with the most requests in the week |
-| `weekly_models` | — | Every model and its request count in the week |
-| `weekly_period_start` | — | Weekly window start (timestamp) |
-| `weekly_period_end` | — | When the weekly quota resets (timestamp) |
-| `weekly_time_remaining` | `s` | Seconds until the weekly quota resets |
-| `last_4_weeks_requests` | — | Requests in the last 4 weeks |
-| `last_4_weeks_spend` | `USD` | Cost in the last 4 weeks |
-| `last_4_weeks_top_model` | — | Model with the most requests in the last 4 weeks |
-| `last_4_weeks_models` | — | Every model and its request count in the last 4 weeks |
-| `last_4_weeks_period_start` | — | Start of the 4 week window (timestamp) |
-| `last_4_weeks_period_end` | — | End of the 4 week window (timestamp) |
+| Sensor | Entity ID suffix | Unit | Description |
+|---|---|---|---|
+| Session Requests | `session_requests` | — | Requests in the current session window |
+| Session Spend | `session_spend` | `USD` | Cost in the current session window |
+| Session Remaining | `session_remaining` | `%` | Session quota remaining |
+| Session Top Model | `session_top_model` | — | Model with the most requests in the session |
+| Session Models | `session_model_breakdown` | — | Every model and its request count in the session |
+| Session Period Start | `session_period_start` | — | Session window start (timestamp) |
+| Session Period End | `session_period_end` | — | When the session resets (timestamp) |
+| Session Time Remaining | `session_period_remaining` | `s` | Seconds until the session resets |
+| Weekly Requests | `weekly_requests` | — | Requests in the current weekly window |
+| Weekly Spend | `weekly_spend` | `USD` | Cost in the current weekly window |
+| Weekly Remaining | `weekly_remaining` | `%` | Weekly quota remaining |
+| Weekly Top Model | `weekly_top_model` | — | Model with the most requests in the week |
+| Weekly Models | `weekly_model_breakdown` | — | Every model and its request count in the week |
+| Weekly Period Start | `weekly_period_start` | — | Weekly window start (timestamp) |
+| Weekly Period End | `weekly_period_end` | — | When the weekly quota resets (timestamp) |
+| Weekly Time Remaining | `weekly_period_remaining` | `s` | Seconds until the weekly quota resets |
+| Last 4 Weeks Requests | `last_4_weeks_requests` | — | Requests in the last 4 weeks |
+| Last 4 Weeks Spend | `last_4_weeks_spend` | `USD` | Cost in the last 4 weeks |
+| Last 4 Weeks Top Model | `last_4_weeks_top_model` | — | Model with the most requests in the last 4 weeks |
+| Last 4 Weeks Models | `last_4_weeks_model_breakdown` | — | Every model and its request count in the last 4 weeks |
+| Last 4 Weeks Period Start | `last_4_weeks_period_start` | — | Start of the 4 week window (timestamp) |
+| Last 4 Weeks Period End | `last_4_weeks_period_end` | — | End of the 4 week window (timestamp) |
 
 The `last_4_weeks_*` window is always available. The `session_*` and `weekly_*` windows depend on your plan.
 
 ### Balance
 
-| Sensor | Unit | Description |
-|---|---|---|
-| `included_balance` | `USD` | Included credit left this period |
-| `included_allowance` | `USD` | Total included credit for the period |
-| `purchased_balance` | `USD` | Remaining purchased credits |
-| `included_period_start` | — | Start of the included period (timestamp) |
-| `included_period_end` | — | End of the included period (timestamp) |
-| `included_time_remaining` | `s` | Seconds until the included period ends |
+| Sensor | Entity ID suffix | Unit | Description |
+|---|---|---|---|
+| Included Balance | `included_balance` | `USD` | Included credit left this period |
+| Included Allowance | `included_allowance` | `USD` | Total included credit for the period |
+| Purchased Balance | `purchased_balance` | `USD` | Remaining purchased credits |
+| Included Period Start | `included_period_start` | — | Start of the included period (timestamp) |
+| Included Period End | `included_period_end` | — | End of the included period (timestamp) |
+| Included Time Remaining | `included_period_remaining` | `s` | Seconds until the included period ends |
 
 `purchased_balance` is available on every plan. The other balance sensors need a credit plan.
+
+Entity IDs are prefixed with the device name, for example `sensor.ollama_main_session_requests` for an account named "Main".
 
 ### How the windows are derived
 
 The usage API returns buckets, not named windows, so the integration derives each window from the reset times the balance API reports:
 
-- **Session** — the window ending at `included.session.resets_at`.
-- **Weekly** — the window ending at `included.weekly.resets_at`.
+- **Session** — the 7 hours ending at `included.session.resets_at`.
+- **Weekly** — the 7 days ending at `included.weekly.resets_at`.
 - **Last 4 weeks** — the 28 days ending at the current time.
 
 Because the reset times come straight from Ollama, no local reset prediction is needed and there is nothing to re-anchor.
