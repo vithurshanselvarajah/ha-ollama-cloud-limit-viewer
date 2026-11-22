@@ -83,3 +83,78 @@ def test_available_keys_includes_remainder_and_spend():
     assert "session_other_model_requests" in keys
     assert "session_remaining" in keys
     assert "purchased_balance" in keys
+
+
+def test_every_sensor_value_function_is_callable():
+    from custom_components.ollama_cloud_usage.sensor import (
+        SENSOR_DESCRIPTIONS,
+        _available_keys,
+    )
+
+    data = OllamaUsageData(
+        session=UsageWindow(
+            label="session",
+            request_count=12,
+            usage_usd=0.5,
+            input_tokens=100,
+            cached_input_tokens=40,
+            output_tokens=20,
+            remaining_percent=72.5,
+            period_type="session",
+            starting_at=datetime(2026, 11, 22, 17, tzinfo=UTC),
+            ending_at=datetime(2026, 11, 23, tzinfo=UTC),
+            resets_at=datetime(2026, 11, 23, tzinfo=UTC),
+            models=[ModelUsage(name="a", request_count=12, usage_usd=0.5)],
+            remainder_request_count=3,
+        ),
+        weekly=UsageWindow(
+            label="weekly",
+            request_count=180,
+            usage_usd=2.5,
+            input_tokens=1000,
+            cached_input_tokens=400,
+            output_tokens=200,
+            remaining_percent=40.0,
+            period_type="weekly",
+            starting_at=datetime(2026, 11, 16, tzinfo=UTC),
+            ending_at=datetime(2026, 11, 23, tzinfo=UTC),
+            resets_at=datetime(2026, 11, 23, tzinfo=UTC),
+            models=[ModelUsage(name="a", request_count=180, usage_usd=2.5)],
+            remainder_request_count=7,
+        ),
+        activity=UsageWindow(
+            label="last_4_weeks",
+            request_count=900,
+            usage_usd=12.5,
+            input_tokens=10000,
+            cached_input_tokens=4000,
+            output_tokens=2000,
+            period_type="last_4_weeks",
+            starting_at=datetime(2026, 10, 26, tzinfo=UTC),
+            ending_at=datetime(2026, 11, 23, tzinfo=UTC),
+            models=[ModelUsage(name="a", request_count=900, usage_usd=12.5)],
+            remainder_request_count=11,
+        ),
+        balance=BalanceReport(
+            included_balance_usd=72.5,
+            included_allowance_usd=100.0,
+            included_period_start=datetime(2026, 11, 1, tzinfo=UTC),
+            included_period_end=datetime(2026, 12, 1, tzinfo=UTC),
+            purchased_balance_usd=25.0,
+            session_remaining_percent=72.5,
+            session_resets_at=datetime(2026, 11, 23, tzinfo=UTC),
+            weekly_remaining_percent=40.0,
+            weekly_resets_at=datetime(2026, 11, 23, tzinfo=UTC),
+        ),
+    )
+
+    active = _available_keys(data)
+    covered = 0
+    for description in SENSOR_DESCRIPTIONS:
+        if description.key not in active:
+            continue
+        value = description.value_fn(data)
+        assert value is not None, description.key
+        covered += 1
+
+    assert covered == len(SENSOR_DESCRIPTIONS)
