@@ -132,6 +132,105 @@ The usage API returns buckets, not named windows, so the integration derives eac
 
 Because the reset times come straight from Ollama, no local reset prediction is needed and there is nothing to re-anchor.
 
+## Data updates
+
+The integration polls ollama.com every 120 seconds by default. Each poll makes three requests: one to the balance endpoint and two to the usage endpoint, for the 30 day and 24 hour ranges. Ollama allows 10 requests per minute per user, shared across API keys and devices, so the default interval leaves plenty of headroom.
+
+The update interval can be changed in the integration options. Lowering it below 60 seconds risks hitting the rate limit, in which case the integration honours the `Retry-After` header and retries later.
+
+When ollama.com cannot be reached, the sensors become unavailable and a warning is logged. When the connection comes back, that is logged too, so the log shows exactly one message per outage rather than one per poll.
+
+## Troubleshooting
+
+### The sensors are unavailable
+
+Check the Home Assistant log for the reason. The usual causes are:
+
+- **The API key was rejected.** ollama.com answered with 401. The integration starts a re-authentication flow asking for a new key.
+- **The account is suspended.** ollama.com answered with 403.
+- **The rate limit was hit.** ollama.com allows 10 requests per minute per user. If other tools use the same API key, or the update interval is very short, the limit can be reached. The integration waits as long as the `Retry-After` header asks.
+
+### Usage looks stale
+
+The ollama.com usage API is not always immediate. Requests can take a while to appear in the reported totals.
+
+### A window is missing
+
+The sensor set follows your plan. On a legacy plan there is no `included_balance`, because legacy plans have no monthly credit allowance. On a credit plan there is no `session_remaining` or `weekly_remaining`, because credit plans have no session or weekly limit. See [Plan types](#plan-types).
+
+### Diagnostics
+
+For a bug report, download the diagnostics from **Settings → Devices & Services → Ollama Cloud Usage → ⋮ → Download diagnostics**. The API key is redacted, and the file contains the configuration and the last usage data.
+
+## Known limitations
+
+- Legacy plans report request counts only. Ollama does not provide cost or token usage for them, so the spend, token and cache sensors do not exist on legacy plans.
+- Ollama caps the per-model breakdown at ten models and folds the rest into a remainder. The `*_other_model_requests` sensor reports those additional requests.
+- The session window is seven hours. Ollama does not document the length of the session limit, so it was derived from the reported usage.
+- Team scope needs a team admin API key. Other keys fall back to personal scope, and a repair issue appears under **Settings → System → Repairs**.
+- The reported usage is what ollama.com records, which can lag behind the actual requests.
+
+## Use cases
+
+- **Watch your remaining quota.** The `session_remaining` and `weekly_remaining` sensors show how much of the limit is left, so a dashboard can show a warning when it runs low.
+- **Track what you spend.** On a credit plan, `included_balance` and `included_allowance` show how much of the monthly allowance is used.
+- **Find your most used model.** The `*_top_model` and `*_model_breakdown` sensors show which models you use and how much of the spend each accounts for.
+- **Improve prompt caching.** `*_cache_hit_ratio` shows how much of your input was served from the prompt cache. A low ratio usually means prompts are not shared between requests.
+- **Automate a warning.** Notify yourself when the session quota drops below a threshold, or when the included balance runs low.
+
+## Automation examples
+
+Warn when the weekly quota runs low:
+
+```yaml
+automation:
+  - alias: "Ollama weekly quota low"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.ollama_main_weekly_remaining
+        below: 20
+    actions:
+      - action: notify.persistent_notification
+        data:
+          message: "Ollama weekly quota is down to {{ states('sensor.ollama_main_weekly_remaining') }}%."
+```
+
+Notify when the included credit is nearly used up:
+
+```yaml
+automation:
+  - alias: "Ollama credit running out"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.ollama_main_included_balance
+        below: 10
+    actions:
+      - action: notify.persistent_notification
+        data:
+          message: "Only ${{ states('sensor.ollama_main_included_balance') }} of included credit left."
+```
+
+Log when a session window resets:
+
+```yaml
+automation:
+  - alias: "Ollama session reset"
+    triggers:
+      - trigger: state
+        entity_id: sensor.ollama_main_session_time_remaining
+        to: 0
+    actions:
+      - action: notify.persistent_notification
+        data:
+          message: "The Ollama session window reset."
+```
+
+## Removing the integration
+
+Go to **Settings → Devices & Services**, find the Ollama Cloud Usage entry, open the **⋮** menu and choose **Delete**. This removes the config entry and all of its entities from Home Assistant.
+
+The API key itself is not revoked by this. To remove it, open **Settings → API Keys** on ollama.com and delete the key.
+
 ## Installation
 
 ### HACS (Recommended)
@@ -188,6 +287,14 @@ Version 3.1 adds the token, cache and per-model cost sensors, plus the team scop
 
 - All new sensors only appear when Ollama actually reports the underlying values, so legacy accounts see no change.
 - Existing sensors are untouched.
+
+## Migration from v3.1
+
+Version 3.2 reorganises the integration and adds diagnostics.
+
+- The diagnostic entities are now disabled by default. Enable the ones you want under the entity settings of the device.
+- The entity IDs of the entities that were already enabled do not change.
+- The integration now provides diagnostics, downloadable from the device page.
 
 ## License
 
