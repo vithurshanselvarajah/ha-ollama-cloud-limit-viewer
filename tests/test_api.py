@@ -186,7 +186,7 @@ def test_build_activity_window_covers_28_days():
     ) - timedelta(days=28)
     assert window.request_count > 0
     assert window.models
-    assert window.total_requests == sum(m.request_count for m in window.models)
+    assert window.request_count == sum(m.request_count for m in window.models)
 
 
 def test_build_session_window_uses_balance_reset():

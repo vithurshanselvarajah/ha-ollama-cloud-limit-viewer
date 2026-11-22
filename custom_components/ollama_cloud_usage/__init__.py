@@ -15,7 +15,6 @@ PLATFORMS: list[str] = ["sensor"]
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
     """Set up the Ollama cloud usage integration."""
     coordinator = OllamaCoordinator(hass, entry)
-    coordinator.async_add_listener(coordinator._async_update_listener)
 
     await coordinator.async_config_entry_first_refresh()
 

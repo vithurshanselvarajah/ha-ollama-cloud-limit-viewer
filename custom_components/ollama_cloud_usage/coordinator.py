@@ -95,7 +95,12 @@ class OllamaCoordinator(DataUpdateCoordinator[OllamaUsageData]):
             async_delete_team_scope_issue(self.hass, self.config_entry.entry_id)
 
     @callback
-    def _async_update_listener(self) -> None:
+    def async_update_listeners(self) -> None:
+        """Notify listeners and log availability changes."""
+        self._log_availability_change()
+        super().async_update_listeners()
+
+    def _log_availability_change(self) -> None:
         """Log when the connection is lost and when it comes back."""
         available = self.last_update_success
         if available == self._was_available:

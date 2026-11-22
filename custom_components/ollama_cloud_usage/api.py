@@ -91,10 +91,6 @@ class UsageWindow:
     remainder_output_tokens: int | None = None
 
     @property
-    def total_requests(self) -> int:
-        return sum(model.request_count for model in self.models)
-
-    @property
     def cache_hit_ratio(self) -> float | None:
         """Share of input tokens that were served from the prompt cache, in percent."""
         if not self.input_tokens or self.cached_input_tokens is None:
