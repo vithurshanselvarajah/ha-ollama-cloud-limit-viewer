@@ -48,24 +48,43 @@ class _FakeResponse:
 
 
 class _FakeSession:
-    def __init__(self, routes: dict[str, list[_FakeResponse]]) -> None:
+    def __init__(
+        self,
+        routes: dict[str, list[_FakeResponse]],
+        usage_by_scope: dict[str, list[_FakeResponse]] | None = None,
+    ) -> None:
         self.routes = routes
+        self.usage_by_scope = usage_by_scope or {}
         self.calls: list[str] = []
 
     def get(self, url: str, **kwargs: object) -> _FakeResponse:
         self.calls.append(url)
-        key = "balance" if url.endswith("/balance") else "usage"
-        responses = self.routes[key]
+        if url.endswith("/balance"):
+            responses = self.routes["balance"]
+            return responses.pop(0) if len(responses) > 1 else responses[0]
+        params = kwargs.get("params") or {}
+        scope = params.get("scope", "self")
+        scoped = self.usage_by_scope.get(scope)
+        if scoped is not None:
+            return scoped.pop(0) if len(scoped) > 1 else scoped[0]
+        responses = self.routes["usage"]
         return responses.pop(0) if len(responses) > 1 else responses[0]
 
 
-async def _setup(hass: HomeAssistant, session: _FakeSession) -> MockConfigEntry:
+async def _setup(
+    hass: HomeAssistant, session: _FakeSession, scope: str = "self"
+) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Main",
         unique_id="main",
         version=3,
-        data={"account_name": "Main", "api_key": API_KEY, "scan_interval": 300},
+        data={
+            "account_name": "Main",
+            "api_key": API_KEY,
+            "scan_interval": 300,
+            "scope": scope,
+        },
     )
     with patch(
         "custom_components.ollama_cloud_usage.async_get_clientsession",
@@ -231,3 +250,42 @@ async def test_session_period_end_is_reset_time(hass: HomeAssistant):
             )
             return
     raise AssertionError("session_period_end entity not found")
+
+
+async def test_team_scope_falls_back_to_self(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_usage(_fixture("api_balance_legacy.json"))],
+            "usage": [
+                _usage(_fixture("api_usage_30d.json")),
+                _usage(_fixture("api_usage_24h.json")),
+            ],
+        },
+        usage_by_scope={
+            "team": [
+                _FakeResponse(403, {"error": "only team admins can use scope=team"}, {})
+            ]
+        },
+    )
+
+    entry = await _setup(hass, session, scope="team")
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.data.scope == "self"
+
+
+async def test_team_scope_is_used_when_allowed(hass: HomeAssistant):
+    session = _FakeSession(
+        {
+            "balance": [_usage(_fixture("api_balance_legacy.json"))],
+            "usage": [
+                _usage(_fixture("api_usage_30d.json")),
+                _usage(_fixture("api_usage_24h.json")),
+            ],
+        }
+    )
+
+    entry = await _setup(hass, session, scope="team")
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.data.scope == "team"

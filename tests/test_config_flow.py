@@ -45,6 +45,7 @@ async def test_config_flow_success(hass: HomeAssistant):
             "account_name": "My Account",
             "api_key": "valid_key.dotpartrest",
             "scan_interval": 120,
+            "scope": "self",
         }
 
 
@@ -203,12 +204,13 @@ async def test_options_flow_updates_scan_interval(hass: HomeAssistant):
     assert result["step_id"] == "init"
 
     result2 = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"scan_interval": 300}
+        result["flow_id"], {"scan_interval": 300, "scope": "team"}
     )
     await hass.async_block_till_done()
 
     assert result2["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
-    assert result2["data"] == {"scan_interval": 300}
+    assert result2["data"] == {"scan_interval": 300, "scope": "team"}
     assert hass.config_entries.async_entries(DOMAIN)[0].options == {
-        "scan_interval": 300
+        "scan_interval": 300,
+        "scope": "team",
     }

@@ -32,6 +32,10 @@ class OllamaAuthError(OllamaApiError):
     """The API key was rejected or the account may not read this data."""
 
 
+class OllamaScopeError(OllamaAuthError):
+    """The requested scope is not available to this API key."""
+
+
 class OllamaParseError(OllamaApiError):
     """The API answered with something that does not match the documented shape."""
 
@@ -199,10 +203,12 @@ async def _request_json(
         allow_redirects=False,
         raise_for_status=False,
     ) as resp:
-        if resp.status in (401, 403):
-            raise OllamaAuthError(
-                f"API key rejected by ollama.com (HTTP {resp.status})"
+        if resp.status == 403:
+            raise OllamaScopeError(
+                "Access to the requested data was refused by ollama.com (HTTP 403)"
             )
+        if resp.status == 401:
+            raise OllamaAuthError("API key rejected by ollama.com (HTTP 401)")
         if resp.status == 429:
             raise OllamaRateLimitError(
                 "Rate limited by ollama.com (HTTP 429)",
@@ -703,7 +709,7 @@ async def _fetch_usage_with_scope(
             return await fetch_usage(
                 session, api_key, usage_range, SCOPE_TEAM
             ), SCOPE_TEAM
-        except OllamaAuthError:
+        except OllamaScopeError:
             _LOGGER.warning(
                 "Team scope is not available for this API key, "
                 "falling back to personal scope"

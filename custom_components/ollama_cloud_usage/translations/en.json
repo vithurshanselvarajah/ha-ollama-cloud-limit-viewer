@@ -3,16 +3,18 @@
     "step": {
       "user": {
         "title": "Add Ollama Account",
-        "description": "Enter your ollama.com account details. To get an API key: log in to ollama.com → Settings → API Keys → Create API Key. The key is stored in your Home Assistant config entry.",
+        "description": "Enter your ollama.com account details. To get an API key: log in to ollama.com \u2192 Settings \u2192 API Keys \u2192 Create API Key. The key is stored in your Home Assistant config entry.",
         "data": {
           "account_name": "Account Name",
           "api_key": "API Key",
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "scope": "Usage Scope"
         },
         "data_description": {
           "account_name": "A friendly name for this account (e.g. Main, Work)",
           "api_key": "An ollama.com API key (Settings, API Keys). Two parts joined by a dot, e.g. 32 hex chars dot 43 chars",
-          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
+          "scan_interval": "How often to fetch usage data (60\u20133600 seconds)",
+          "scope": "Personal usage for this API key, or the whole team (team admins only)"
         }
       },
       "reauth_confirm": {
@@ -37,10 +39,10 @@
       }
     },
     "error": {
-      "invalid_api_key": "API key was rejected by ollama.com — check it is valid and not revoked",
-      "parse_error": "Connected but could not parse usage data — API shape may have changed",
+      "invalid_api_key": "API key was rejected by ollama.com \u2014 check it is valid and not revoked",
+      "parse_error": "Connected but could not parse usage data \u2014 API shape may have changed",
       "api_error": "ollama.com returned an unexpected response",
-      "cannot_connect": "Could not connect to ollama.com — check your network",
+      "cannot_connect": "Could not connect to ollama.com \u2014 check your network",
       "unknown": "An unexpected error occurred"
     },
     "abort": {
@@ -54,10 +56,12 @@
       "init": {
         "title": "Ollama Cloud Usage Options",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "scope": "Usage Scope"
         },
         "data_description": {
-          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
+          "scan_interval": "How often to fetch usage data (60\u20133600 seconds)",
+          "scope": "Personal usage for this API key, or the whole team (team admins only)"
         }
       }
     }
@@ -147,6 +151,60 @@
       },
       "included_period_remaining": {
         "name": "Included Time Remaining"
+      },
+      "session_input_tokens": {
+        "name": "session_input_tokens"
+      },
+      "session_cached_input_tokens": {
+        "name": "session_cached_input_tokens"
+      },
+      "session_output_tokens": {
+        "name": "session_output_tokens"
+      },
+      "session_cache_hit_ratio": {
+        "name": "session_cache_hit_ratio"
+      },
+      "session_model_spend_breakdown": {
+        "name": "session_model_spend_breakdown"
+      },
+      "session_other_model_requests": {
+        "name": "session_other_model_requests"
+      },
+      "weekly_input_tokens": {
+        "name": "weekly_input_tokens"
+      },
+      "weekly_cached_input_tokens": {
+        "name": "weekly_cached_input_tokens"
+      },
+      "weekly_output_tokens": {
+        "name": "weekly_output_tokens"
+      },
+      "weekly_cache_hit_ratio": {
+        "name": "weekly_cache_hit_ratio"
+      },
+      "weekly_model_spend_breakdown": {
+        "name": "weekly_model_spend_breakdown"
+      },
+      "weekly_other_model_requests": {
+        "name": "weekly_other_model_requests"
+      },
+      "last_4_weeks_input_tokens": {
+        "name": "last_4_weeks_input_tokens"
+      },
+      "last_4_weeks_cached_input_tokens": {
+        "name": "last_4_weeks_cached_input_tokens"
+      },
+      "last_4_weeks_output_tokens": {
+        "name": "last_4_weeks_output_tokens"
+      },
+      "last_4_weeks_cache_hit_ratio": {
+        "name": "last_4_weeks_cache_hit_ratio"
+      },
+      "last_4_weeks_model_spend_breakdown": {
+        "name": "last_4_weeks_model_spend_breakdown"
+      },
+      "last_4_weeks_other_model_requests": {
+        "name": "last_4_weeks_other_model_requests"
       }
     }
   }

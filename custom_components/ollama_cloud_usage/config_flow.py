@@ -19,8 +19,11 @@ from .const import (
     CONF_ACCOUNT_NAME,
     CONF_API_KEY,
     CONF_SCAN_INTERVAL,
+    CONF_SCOPE,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    SCOPE_SELF,
+    SCOPE_TEAM,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,6 +35,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
             int, vol.Range(min=60, max=3600)
         ),
+        vol.Optional(CONF_SCOPE, default=SCOPE_SELF): vol.In([SCOPE_SELF, SCOPE_TEAM]),
     }
 )
 
@@ -149,11 +153,18 @@ class OllamaCloudUsageOptionsFlow(OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         current = self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        current_scope = self.config_entry.options.get(
+            CONF_SCOPE,
+            self.config_entry.data.get(CONF_SCOPE, SCOPE_SELF),
+        )
         schema = vol.Schema(
             {
                 vol.Optional(CONF_SCAN_INTERVAL, default=current): vol.All(
                     int, vol.Range(min=60, max=3600)
-                )
+                ),
+                vol.Optional(CONF_SCOPE, default=current_scope): vol.In(
+                    [SCOPE_SELF, SCOPE_TEAM]
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

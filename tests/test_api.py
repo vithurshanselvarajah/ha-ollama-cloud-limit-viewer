@@ -7,8 +7,12 @@ from pathlib import Path
 import pytest
 
 from custom_components.ollama_cloud_usage.api import (
+    ModelUsage,
     OllamaParseError,
+    UsageBucket,
     UsageReport,
+    UsageSummary,
+    UsageWindow,
     _sum_models,
     build_activity_window,
     build_session_window,
@@ -273,3 +277,140 @@ def test_weekly_window_equals_api_seven_day_range():
 
     assert window is not None
     assert window.request_count == seven.totals.request_count
+
+
+def test_parse_usage_reads_model_cost_and_tokens():
+    payload = {
+        "range": "7d",
+        "scope": "self",
+        "granularity": "day",
+        "from": "2026-11-15T00:00:00Z",
+        "until": "2026-11-22T00:00:00Z",
+        "totals": {
+            "request_count": 100,
+            "usage_usd": 1.5,
+            "input_tokens": 1000,
+            "cached_input_tokens": 400,
+            "output_tokens": 200,
+            "groups": [
+                {
+                    "model": "glm-5.3-flash",
+                    "request_count": 60,
+                    "usage_usd": 0.9,
+                    "input_tokens": 600,
+                    "cached_input_tokens": 240,
+                    "output_tokens": 120,
+                }
+            ],
+        },
+        "buckets": [],
+    }
+
+    report = parse_usage(payload)
+    model = report.totals.models[0]
+
+    assert model.name == "glm-5.3-flash"
+    assert model.request_count == 60
+    assert model.usage_usd == pytest.approx(0.9)
+    assert model.input_tokens == 600
+    assert model.cached_input_tokens == 240
+    assert model.output_tokens == 120
+
+
+def test_parse_usage_reads_remainder():
+    payload = {
+        "range": "7d",
+        "scope": "self",
+        "granularity": "day",
+        "from": "2026-11-15T00:00:00Z",
+        "until": "2026-11-22T00:00:00Z",
+        "totals": {
+            "request_count": 100,
+            "usage_usd": 1.5,
+            "groups": [{"model": "a", "request_count": 60}],
+            "remainder": {
+                "request_count": 40,
+                "usage_usd": 0.6,
+                "input_tokens": 400,
+                "cached_input_tokens": 160,
+                "output_tokens": 80,
+            },
+        },
+        "buckets": [],
+    }
+
+    report = parse_usage(payload)
+
+    assert report.totals.remainder_request_count == 40
+    assert report.totals.remainder_usage_usd == pytest.approx(0.6)
+    assert report.totals.remainder_input_tokens == 400
+    assert report.totals.remainder_cached_input_tokens == 160
+    assert report.totals.remainder_output_tokens == 80
+
+
+def test_parse_usage_raises_on_bad_remainder():
+    payload = {
+        "range": "7d",
+        "scope": "self",
+        "granularity": "day",
+        "from": "2026-11-15T00:00:00Z",
+        "until": "2026-11-22T00:00:00Z",
+        "totals": {"request_count": 1, "remainder": "nope"},
+        "buckets": [],
+    }
+
+    with pytest.raises(OllamaParseError):
+        parse_usage(payload)
+
+
+def test_window_aggregates_tokens_and_cache_ratio():
+    report = UsageReport(
+        range="7d",
+        granularity="day",
+        starting_at=datetime(2026, 11, 15, tzinfo=UTC),
+        ending_at=datetime(2026, 11, 22, tzinfo=UTC),
+        totals=UsageSummary(request_count=100),
+        buckets=[
+            UsageBucket(
+                starting_at=datetime(2026, 11, 21, tzinfo=UTC),
+                ending_at=datetime(2026, 11, 22, tzinfo=UTC),
+                request_count=100,
+                usage_usd=1.5,
+                input_tokens=1000,
+                cached_input_tokens=400,
+                output_tokens=200,
+                models=[
+                    ModelUsage(
+                        name="a",
+                        request_count=60,
+                        usage_usd=0.9,
+                        input_tokens=600,
+                        cached_input_tokens=240,
+                        output_tokens=120,
+                    )
+                ],
+                remainder_request_count=40,
+                remainder_usage_usd=0.6,
+                remainder_input_tokens=400,
+                remainder_cached_input_tokens=160,
+                remainder_output_tokens=80,
+            )
+        ],
+    )
+
+    window = build_activity_window(report)
+
+    assert window.input_tokens == 1000
+    assert window.cached_input_tokens == 400
+    assert window.output_tokens == 200
+    assert window.cache_hit_ratio == pytest.approx(0.4)
+    assert window.remainder_request_count == 40
+    assert window.other_model_requests == 40
+    assert window.models[0].usage_usd == pytest.approx(0.9)
+    assert window.models[0].input_tokens == 600
+
+
+def test_cache_hit_ratio_is_none_without_tokens():
+    window = UsageWindow(label="session", request_count=5)
+
+    assert window.cache_hit_ratio is None

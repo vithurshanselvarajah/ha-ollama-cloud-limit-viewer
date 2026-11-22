@@ -42,6 +42,28 @@ def _window_spend(window: UsageWindow | None) -> float | None:
     return window.usage_usd if window else None
 
 
+def _window_input_tokens(window: UsageWindow | None) -> int | None:
+    return window.input_tokens if window else None
+
+
+def _window_cached_input_tokens(window: UsageWindow | None) -> int | None:
+    return window.cached_input_tokens if window else None
+
+
+def _window_output_tokens(window: UsageWindow | None) -> int | None:
+    return window.output_tokens if window else None
+
+
+def _window_cache_hit_ratio(window: UsageWindow | None) -> float | None:
+    return window.cache_hit_ratio if window else None
+
+
+def _window_other_requests(window: UsageWindow | None) -> int | None:
+    if not window or not window.remainder_request_count:
+        return None
+    return window.remainder_request_count
+
+
 def _window_remaining(window: UsageWindow | None) -> float | None:
     return window.remaining_percent if window else None
 
@@ -56,6 +78,19 @@ def _window_model_breakdown(window: UsageWindow | None) -> str | None:
     if not window or not window.models:
         return None
     return ", ".join(f"{model.name} ({model.request_count})" for model in window.models)
+
+
+def _window_model_spend_breakdown(window: UsageWindow | None) -> str | None:
+    if not window or not window.models:
+        return None
+    parts = [
+        f"{model.name} ({model.usage_usd:.5f})"
+        for model in window.models
+        if model.usage_usd is not None
+    ]
+    if not parts:
+        return None
+    return ", ".join(parts)
 
 
 def _window_start(window: UsageWindow | None) -> datetime | None:
@@ -129,6 +164,53 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         value_fn=lambda data: _window_top_model(data.session),
     ),
     OllamaSensorDescription(
+        key="session_input_tokens",
+        translation_key="session_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:token",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_input_tokens(data.session),
+    ),
+    OllamaSensorDescription(
+        key="session_cached_input_tokens",
+        translation_key="session_cached_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:package-variant-closed",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cached_input_tokens(data.session),
+    ),
+    OllamaSensorDescription(
+        key="session_output_tokens",
+        translation_key="session_output_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:arrow-top-right",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_output_tokens(data.session),
+    ),
+    OllamaSensorDescription(
+        key="session_cache_hit_ratio",
+        translation_key="session_cache_hit_ratio",
+        native_unit_of_measurement=PERCENTAGE,
+        icon="mdi:percent",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cache_hit_ratio(data.session),
+    ),
+    OllamaSensorDescription(
+        key="session_model_spend_breakdown",
+        translation_key="session_model_spend_breakdown",
+        icon="mdi:currency-usd",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_model_spend_breakdown(data.session),
+    ),
+    OllamaSensorDescription(
+        key="session_other_model_requests",
+        translation_key="session_other_model_requests",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:dots-horizontal",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_other_requests(data.session),
+    ),
+    OllamaSensorDescription(
         key="session_model_breakdown",
         translation_key="session_model_breakdown",
         icon="mdi:format-list-bulleted",
@@ -190,6 +272,53 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         value_fn=lambda data: _window_top_model(data.weekly),
     ),
     OllamaSensorDescription(
+        key="weekly_input_tokens",
+        translation_key="weekly_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:token",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_input_tokens(data.weekly),
+    ),
+    OllamaSensorDescription(
+        key="weekly_cached_input_tokens",
+        translation_key="weekly_cached_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:package-variant-closed",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cached_input_tokens(data.weekly),
+    ),
+    OllamaSensorDescription(
+        key="weekly_output_tokens",
+        translation_key="weekly_output_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:arrow-top-right",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_output_tokens(data.weekly),
+    ),
+    OllamaSensorDescription(
+        key="weekly_cache_hit_ratio",
+        translation_key="weekly_cache_hit_ratio",
+        native_unit_of_measurement=PERCENTAGE,
+        icon="mdi:percent",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cache_hit_ratio(data.weekly),
+    ),
+    OllamaSensorDescription(
+        key="weekly_model_spend_breakdown",
+        translation_key="weekly_model_spend_breakdown",
+        icon="mdi:currency-usd",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_model_spend_breakdown(data.weekly),
+    ),
+    OllamaSensorDescription(
+        key="weekly_other_model_requests",
+        translation_key="weekly_other_model_requests",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:dots-horizontal",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_other_requests(data.weekly),
+    ),
+    OllamaSensorDescription(
         key="weekly_model_breakdown",
         translation_key="weekly_model_breakdown",
         icon="mdi:format-list-bulleted",
@@ -244,6 +373,53 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
         icon="mdi:robot",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: _window_top_model(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_input_tokens",
+        translation_key="last_4_weeks_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:token",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_input_tokens(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_cached_input_tokens",
+        translation_key="last_4_weeks_cached_input_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:package-variant-closed",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cached_input_tokens(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_output_tokens",
+        translation_key="last_4_weeks_output_tokens",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:arrow-top-right",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_output_tokens(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_cache_hit_ratio",
+        translation_key="last_4_weeks_cache_hit_ratio",
+        native_unit_of_measurement=PERCENTAGE,
+        icon="mdi:percent",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_cache_hit_ratio(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_model_spend_breakdown",
+        translation_key="last_4_weeks_model_spend_breakdown",
+        icon="mdi:currency-usd",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_model_spend_breakdown(data.activity),
+    ),
+    OllamaSensorDescription(
+        key="last_4_weeks_other_model_requests",
+        translation_key="last_4_weeks_other_model_requests",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        icon="mdi:dots-horizontal",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: _window_other_requests(data.activity),
     ),
     OllamaSensorDescription(
         key="last_4_weeks_model_breakdown",
@@ -346,6 +522,18 @@ def _available_keys(data: OllamaUsageData) -> set[str]:
             keys.add(f"{prefix}_spend")
         if prefix != "last_4_weeks":
             keys.add(f"{prefix}_period_remaining")
+        if window.input_tokens is not None:
+            keys.add(f"{prefix}_input_tokens")
+        if window.cached_input_tokens is not None:
+            keys.add(f"{prefix}_cached_input_tokens")
+        if window.output_tokens is not None:
+            keys.add(f"{prefix}_output_tokens")
+        if window.cache_hit_ratio is not None:
+            keys.add(f"{prefix}_cache_hit_ratio")
+        if any(model.usage_usd is not None for model in window.models):
+            keys.add(f"{prefix}_model_spend_breakdown")
+        if window.remainder_request_count:
+            keys.add(f"{prefix}_other_model_requests")
 
     balance = data.balance
     if balance is None:

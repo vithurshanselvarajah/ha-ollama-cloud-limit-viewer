@@ -61,6 +61,12 @@ Sensors that do not apply to your plan are simply never created — you will not
 | Session Remaining | `session_remaining` | `%` | Session quota remaining |
 | Session Top Model | `session_top_model` | — | Model with the most requests in the session |
 | Session Models | `session_model_breakdown` | — | Every model and its request count in the session |
+| Session Model Spend | `session_model_spend_breakdown` | — | Spend per model, e.g. `gpt-oss:120b (0.01234)` |
+| Session Other Model Requests | `session_other_model_requests` | — | Requests from models outside the reported group list |
+| Session Input Tokens | `session_input_tokens` | — | Input tokens, cached ones included |
+| Session Cached Input Tokens | `session_cached_input_tokens` | — | Input tokens served from the prompt cache |
+| Session Output Tokens | `session_output_tokens` | — | Output tokens |
+| Session Cache Hit Ratio | `session_cache_hit_ratio` | `%` | Share of input tokens served from cache |
 | Session Period Start | `session_period_start` | — | Session window start (timestamp) |
 | Session Period End | `session_period_end` | — | When the session resets (timestamp) |
 | Session Time Remaining | `session_period_remaining` | `s` | Seconds until the session resets |
@@ -69,6 +75,12 @@ Sensors that do not apply to your plan are simply never created — you will not
 | Weekly Remaining | `weekly_remaining` | `%` | Weekly quota remaining |
 | Weekly Top Model | `weekly_top_model` | — | Model with the most requests in the week |
 | Weekly Models | `weekly_model_breakdown` | — | Every model and its request count in the week |
+| Weekly Model Spend | `weekly_model_spend_breakdown` | — | Spend per model |
+| Weekly Other Model Requests | `weekly_other_model_requests` | — | Requests from models outside the reported group list |
+| Weekly Input Tokens | `weekly_input_tokens` | — | Input tokens, cached ones included |
+| Weekly Cached Input Tokens | `weekly_cached_input_tokens` | — | Input tokens served from the prompt cache |
+| Weekly Output Tokens | `weekly_output_tokens` | — | Output tokens |
+| Weekly Cache Hit Ratio | `weekly_cache_hit_ratio` | `%` | Share of input tokens served from cache |
 | Weekly Period Start | `weekly_period_start` | — | Weekly window start (timestamp) |
 | Weekly Period End | `weekly_period_end` | — | When the weekly quota resets (timestamp) |
 | Weekly Time Remaining | `weekly_period_remaining` | `s` | Seconds until the weekly quota resets |
@@ -76,10 +88,22 @@ Sensors that do not apply to your plan are simply never created — you will not
 | Last 4 Weeks Spend | `last_4_weeks_spend` | `USD` | Cost in the last 4 weeks |
 | Last 4 Weeks Top Model | `last_4_weeks_top_model` | — | Model with the most requests in the last 4 weeks |
 | Last 4 Weeks Models | `last_4_weeks_model_breakdown` | — | Every model and its request count in the last 4 weeks |
+| Last 4 Weeks Model Spend | `last_4_weeks_model_spend_breakdown` | — | Spend per model |
+| Last 4 Weeks Other Model Requests | `last_4_weeks_other_model_requests` | — | Requests from models outside the reported group list |
+| Last 4 Weeks Input Tokens | `last_4_weeks_input_tokens` | — | Input tokens, cached ones included |
+| Last 4 Weeks Cached Input Tokens | `last_4_weeks_cached_input_tokens` | — | Input tokens served from the prompt cache |
+| Last 4 Weeks Output Tokens | `last_4_weeks_output_tokens` | — | Output tokens |
+| Last 4 Weeks Cache Hit Ratio | `last_4_weeks_cache_hit_ratio` | `%` | Share of input tokens served from cache |
 | Last 4 Weeks Period Start | `last_4_weeks_period_start` | — | Start of the 4 week window (timestamp) |
 | Last 4 Weeks Period End | `last_4_weeks_period_end` | — | End of the 4 week window (timestamp) |
 
 The `last_4_weeks_*` window is always available. The `session_*` and `weekly_*` windows depend on your plan.
+
+Ollama caps the per-model breakdown at ten models and folds the rest into a remainder, so `*_other_model_requests` reports those additional requests rather than dropping them.
+
+### Team scope
+
+Team admins can report usage for the whole team instead of just their own API key. Set **Usage Scope** to `team` in the integration options. If the key belongs to a non-admin, ollama.com returns `403` and the integration falls back to personal scope with a warning in the log.
 
 ### Balance
 
