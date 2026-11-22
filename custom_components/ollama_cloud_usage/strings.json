@@ -14,6 +14,26 @@
           "api_key": "An ollama.com API key (Settings, API Keys). Two parts joined by a dot, e.g. 32 hex chars dot 43 chars",
           "scan_interval": "How often to fetch usage data (60–3600 seconds)"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Ollama Account",
+        "description": "The API key for {account_name} was rejected by ollama.com. Enter a new API key.",
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "An ollama.com API key (Settings, API Keys)"
+        }
+      },
+      "reconfigure": {
+        "title": "Update Ollama Account",
+        "description": "Enter a new API key for {account_name}.",
+        "data": {
+          "api_key": "API Key"
+        },
+        "data_description": {
+          "api_key": "An ollama.com API key (Settings, API Keys)"
+        }
       }
     },
     "error": {
@@ -24,16 +44,34 @@
       "unknown": "An unexpected error occurred"
     },
     "abort": {
-      "already_configured": "This account is already configured"
+      "already_configured": "This account is already configured",
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Re-configuration was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ollama Cloud Usage Options",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to fetch usage data (60–3600 seconds)"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
+      "session_requests": {
+        "name": "Session Requests"
+      },
       "session_spend": {
         "name": "Session Spend"
       },
-      "session_requests": {
-        "name": "Session Requests"
+      "session_remaining": {
+        "name": "Session Remaining"
       },
       "session_top_model": {
         "name": "Session Top Model"
@@ -50,11 +88,14 @@
       "session_period_remaining": {
         "name": "Session Time Remaining"
       },
+      "weekly_requests": {
+        "name": "Weekly Requests"
+      },
       "weekly_spend": {
         "name": "Weekly Spend"
       },
-      "weekly_requests": {
-        "name": "Weekly Requests"
+      "weekly_remaining": {
+        "name": "Weekly Remaining"
       },
       "weekly_top_model": {
         "name": "Weekly Top Model"
@@ -71,11 +112,11 @@
       "weekly_period_remaining": {
         "name": "Weekly Time Remaining"
       },
-      "last_4_weeks_spend": {
-        "name": "Last 4 Weeks Spend"
-      },
       "last_4_weeks_requests": {
         "name": "Last 4 Weeks Requests"
+      },
+      "last_4_weeks_spend": {
+        "name": "Last 4 Weeks Spend"
       },
       "last_4_weeks_top_model": {
         "name": "Last 4 Weeks Top Model"
@@ -89,8 +130,23 @@
       "last_4_weeks_period_end": {
         "name": "Last 4 Weeks Period End"
       },
-      "last_4_weeks_period_remaining": {
-        "name": "Last 4 Weeks Time Remaining"
+      "included_balance": {
+        "name": "Included Balance"
+      },
+      "included_allowance": {
+        "name": "Included Allowance"
+      },
+      "purchased_balance": {
+        "name": "Purchased Balance"
+      },
+      "included_period_start": {
+        "name": "Included Period Start"
+      },
+      "included_period_end": {
+        "name": "Included Period End"
+      },
+      "included_period_remaining": {
+        "name": "Included Time Remaining"
       }
     }
   }

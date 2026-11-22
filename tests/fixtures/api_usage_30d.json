@@ -1,0 +1,385 @@
+{
+  "range": "30d",
+  "scope": "self",
+  "granularity": "day",
+  "group_by": "model",
+  "from": "2026-10-23T00:00:00Z",
+  "until": "2026-11-22T21:42:00.969579437Z",
+  "totals": {
+    "request_count": 26381,
+    "groups": [
+      {
+        "model": "minimax-m3.1-flash",
+        "request_count": 22738
+      },
+      {
+        "model": "minimax-m3",
+        "request_count": 3337
+      },
+      {
+        "model": "deepseek-v4.1-flash:1017",
+        "request_count": 218
+      },
+      {
+        "model": "gemma4:31b",
+        "request_count": 85
+      },
+      {
+        "model": "gpt-oss:20b",
+        "request_count": 3
+      }
+    ]
+  },
+  "buckets": [
+    {
+      "from": "2026-10-23T00:00:00Z",
+      "until": "2026-10-24T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-10-24T00:00:00Z",
+      "until": "2026-10-25T00:00:00Z",
+      "request_count": 1,
+      "groups": [
+        {
+          "model": "gemma4:31b",
+          "request_count": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-10-25T00:00:00Z",
+      "until": "2026-10-26T00:00:00Z",
+      "request_count": 2,
+      "groups": [
+        {
+          "model": "gemma4:31b",
+          "request_count": 2
+        }
+      ]
+    },
+    {
+      "from": "2026-10-26T00:00:00Z",
+      "until": "2026-10-27T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-10-27T00:00:00Z",
+      "until": "2026-10-28T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-10-28T00:00:00Z",
+      "until": "2026-10-29T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-10-29T00:00:00Z",
+      "until": "2026-10-30T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-10-30T00:00:00Z",
+      "until": "2026-10-31T00:00:00Z",
+      "request_count": 338,
+      "groups": [
+        {
+          "model": "minimax-m3",
+          "request_count": 338
+        }
+      ]
+    },
+    {
+      "from": "2026-10-31T00:00:00Z",
+      "until": "2026-11-01T00:00:00Z",
+      "request_count": 726,
+      "groups": [
+        {
+          "model": "minimax-m3",
+          "request_count": 496
+        },
+        {
+          "model": "deepseek-v4.1-flash:1017",
+          "request_count": 216
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 11
+        },
+        {
+          "model": "gpt-oss:20b",
+          "request_count": 3
+        }
+      ]
+    },
+    {
+      "from": "2026-11-01T00:00:00Z",
+      "until": "2026-11-02T00:00:00Z",
+      "request_count": 1041,
+      "groups": [
+        {
+          "model": "minimax-m3",
+          "request_count": 1035
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 6
+        }
+      ]
+    },
+    {
+      "from": "2026-11-02T00:00:00Z",
+      "until": "2026-11-03T00:00:00Z",
+      "request_count": 1218,
+      "groups": [
+        {
+          "model": "minimax-m3",
+          "request_count": 1217
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-11-03T00:00:00Z",
+      "until": "2026-11-04T00:00:00Z",
+      "request_count": 373,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 102
+        },
+        {
+          "model": "minimax-m3",
+          "request_count": 251
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 20
+        }
+      ]
+    },
+    {
+      "from": "2026-11-04T00:00:00Z",
+      "until": "2026-11-05T00:00:00Z",
+      "request_count": 55,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 55
+        }
+      ]
+    },
+    {
+      "from": "2026-11-05T00:00:00Z",
+      "until": "2026-11-06T00:00:00Z",
+      "request_count": 517,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 517
+        }
+      ]
+    },
+    {
+      "from": "2026-11-06T00:00:00Z",
+      "until": "2026-11-07T00:00:00Z",
+      "request_count": 1,
+      "groups": [
+        {
+          "model": "gemma4:31b",
+          "request_count": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-11-07T00:00:00Z",
+      "until": "2026-11-08T00:00:00Z",
+      "request_count": 428,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 428
+        }
+      ]
+    },
+    {
+      "from": "2026-11-08T00:00:00Z",
+      "until": "2026-11-09T00:00:00Z",
+      "request_count": 1975,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1975
+        }
+      ]
+    },
+    {
+      "from": "2026-11-09T00:00:00Z",
+      "until": "2026-11-10T00:00:00Z",
+      "request_count": 3172,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 3172
+        }
+      ]
+    },
+    {
+      "from": "2026-11-10T00:00:00Z",
+      "until": "2026-11-11T00:00:00Z",
+      "request_count": 1864,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1864
+        }
+      ]
+    },
+    {
+      "from": "2026-11-11T00:00:00Z",
+      "until": "2026-11-12T00:00:00Z",
+      "request_count": 3849,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 3849
+        }
+      ]
+    },
+    {
+      "from": "2026-11-12T00:00:00Z",
+      "until": "2026-11-13T00:00:00Z",
+      "request_count": 3384,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 3384
+        }
+      ]
+    },
+    {
+      "from": "2026-11-13T00:00:00Z",
+      "until": "2026-11-14T00:00:00Z",
+      "request_count": 1410,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1409
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-11-14T00:00:00Z",
+      "until": "2026-11-15T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-11-15T00:00:00Z",
+      "until": "2026-11-16T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-11-16T00:00:00Z",
+      "until": "2026-11-17T00:00:00Z",
+      "request_count": 0,
+      "groups": []
+    },
+    {
+      "from": "2026-11-17T00:00:00Z",
+      "until": "2026-11-18T00:00:00Z",
+      "request_count": 715,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 715
+        }
+      ]
+    },
+    {
+      "from": "2026-11-18T00:00:00Z",
+      "until": "2026-11-19T00:00:00Z",
+      "request_count": 955,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 955
+        }
+      ]
+    },
+    {
+      "from": "2026-11-19T00:00:00Z",
+      "until": "2026-11-20T00:00:00Z",
+      "request_count": 1253,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1253
+        }
+      ]
+    },
+    {
+      "from": "2026-11-20T00:00:00Z",
+      "until": "2026-11-21T00:00:00Z",
+      "request_count": 782,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 764
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 18
+        }
+      ]
+    },
+    {
+      "from": "2026-11-21T00:00:00Z",
+      "until": "2026-11-22T00:00:00Z",
+      "request_count": 427,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 416
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 11
+        }
+      ]
+    },
+    {
+      "from": "2026-11-22T00:00:00Z",
+      "until": "2026-11-22T21:42:00.969579437Z",
+      "partial": true,
+      "request_count": 1895,
+      "groups": [
+        {
+          "model": "minimax-m3.1-flash",
+          "request_count": 1880
+        },
+        {
+          "model": "deepseek-v4.1-flash:1017",
+          "request_count": 2
+        },
+        {
+          "model": "gemma4:31b",
+          "request_count": 13
+        }
+      ]
+    }
+  ]
+}

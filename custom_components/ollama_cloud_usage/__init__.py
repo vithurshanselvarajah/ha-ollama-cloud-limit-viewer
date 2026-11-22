@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -17,6 +17,7 @@ from .api import (
     OllamaApiError,
     OllamaAuthError,
     OllamaParseError,
+    OllamaRateLimitError,
     OllamaUsageData,
     fetch_and_parse,
 )
@@ -25,7 +26,6 @@ from .const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
 )
-from .resets import SessionResetTracker, WeeklyResetTracker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,44 +34,23 @@ PLATFORMS: list[str] = ["sensor"]
 type OllamaConfigEntry = ConfigEntry[DataUpdateCoordinator[OllamaUsageData]]
 
 
-def _apply_reset_predictions(
-    data: OllamaUsageData,
-    session_tracker: SessionResetTracker,
-    weekly_tracker: WeeklyResetTracker,
-    now: datetime,
-) -> None:
-    if data.session is not None:
-        session_tracker.observe(data.session.usage_usd, now)
-        if session_tracker.has_anchor:
-            end = session_tracker.next_reset(now)
-            if end is not None:
-                start = end - timedelta(hours=SessionResetTracker.BUCKET_HOURS)
-                data.session.predicted_start = start
-                data.session.predicted_end = end
-
-    if data.weekly is not None:
-        weekly_tracker.observe(data.weekly.usage_usd, now)
-        if weekly_tracker.has_anchor:
-            end = weekly_tracker.next_reset(now)
-            if end is not None:
-                start = end - timedelta(days=7)
-                data.weekly.predicted_start = start
-                data.weekly.predicted_end = end
-
-
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
     api_key = entry.data[CONF_API_KEY]
     scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     session = async_get_clientsession(hass)
-    session_tracker = SessionResetTracker()
-    weekly_tracker = WeeklyResetTracker()
 
     async def _async_update_with_handling() -> OllamaUsageData:
         try:
-            data = await fetch_and_parse(session, api_key)
+            return await fetch_and_parse(session, api_key)
         except OllamaAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"API key rejected by ollama.com: {err}"
+            ) from err
+        except OllamaRateLimitError as err:
+            retry_after = err.retry_after if err.retry_after is not None else 60
+            raise UpdateFailed(
+                f"Rate limited by ollama.com: {err}",
+                retry_after=retry_after,
             ) from err
         except OllamaParseError as err:
             raise UpdateFailed(f"Could not parse usage data: {err}") from err
@@ -80,14 +59,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
         except (aiohttp.ClientError, TimeoutError) as err:
             raise UpdateFailed(f"Could not connect to ollama.com: {err}") from err
 
-        _apply_reset_predictions(
-            data, session_tracker, weekly_tracker, datetime.now(UTC)
-        )
-        return data
-
     coordinator: DataUpdateCoordinator[OllamaUsageData] = DataUpdateCoordinator(
         hass,
         _LOGGER,
+        config_entry=entry,
         name=f"Ollama {entry.title}",
         update_method=_async_update_with_handling,
         update_interval=timedelta(seconds=scan_interval),
