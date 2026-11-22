@@ -9,6 +9,7 @@ import aiohttp
 from .const import (
     BALANCE_URL,
     USAGE_RANGE_7D,
+    USAGE_RANGE_24H,
     USAGE_RANGE_30D,
     USAGE_URL,
     USER_AGENT,
@@ -18,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 WEEKLY_WINDOW = timedelta(days=7)
 ACTIVITY_WINDOW = timedelta(days=28)
-SESSION_WINDOW = timedelta(hours=5)
+SESSION_WINDOW = timedelta(hours=6)
 
 
 class OllamaApiError(Exception):
@@ -26,7 +27,7 @@ class OllamaApiError(Exception):
 
 
 class OllamaAuthError(OllamaApiError):
-    """The API key was rejected or the account is not allowed to read this data."""
+    """The API key was rejected or the account may not read this data."""
 
 
 class OllamaParseError(OllamaApiError):
@@ -492,14 +493,16 @@ def build_activity_window(report: UsageReport) -> UsageWindow:
 
 
 def build_legacy_session_window(
-    report: UsageReport, balance: BalanceReport
+    hourly: UsageReport,
+    daily: UsageReport,
+    balance: BalanceReport,
 ) -> UsageWindow | None:
     if balance.session_remaining_percent is None:
         return None
-    end = balance.session_resets_at or report.ending_at
+    end = balance.session_resets_at or hourly.ending_at
     start = _floor_to_hour(end - SESSION_WINDOW)
     window = _window_from_buckets(
-        report.buckets,
+        hourly.buckets,
         label="session",
         period_type="session",
         start=start,
@@ -529,11 +532,11 @@ def build_legacy_weekly_window(
     return window
 
 
-def build_credit_session_window(report: UsageReport) -> UsageWindow:
-    end = report.ending_at
+def build_credit_session_window(hourly: UsageReport) -> UsageWindow:
+    end = hourly.ending_at
     start = _floor_to_hour(end - SESSION_WINDOW)
     return _window_from_buckets(
-        report.buckets,
+        hourly.buckets,
         label="session",
         period_type="session",
         start=start,
@@ -549,16 +552,19 @@ async def fetch_and_parse(
     balance_payload = await fetch_balance(session, api_key)
     balance = parse_balance(balance_payload)
 
-    usage_payload = await fetch_usage(session, api_key, usage_range)
-    report = parse_usage(usage_payload)
+    daily_payload = await fetch_usage(session, api_key, usage_range)
+    daily = parse_usage(daily_payload)
+
+    hourly_payload = await fetch_usage(session, api_key, USAGE_RANGE_24H)
+    hourly = parse_usage(hourly_payload)
 
     data = OllamaUsageData(balance=balance)
-    data.activity = build_activity_window(report)
+    data.activity = build_activity_window(daily)
 
     if balance.is_legacy_plan:
-        data.session = build_legacy_session_window(report, balance)
-        data.weekly = build_legacy_weekly_window(report, balance)
+        data.session = build_legacy_session_window(hourly, daily, balance)
+        data.weekly = build_legacy_weekly_window(daily, balance)
     else:
-        data.session = build_credit_session_window(report)
+        data.session = build_credit_session_window(hourly)
 
     return data
