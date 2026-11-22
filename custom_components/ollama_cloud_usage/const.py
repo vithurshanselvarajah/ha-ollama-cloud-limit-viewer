@@ -3,8 +3,12 @@ DOMAIN = "ollama_cloud_usage"
 CONF_API_KEY = "api_key"
 CONF_ACCOUNT_NAME = "account_name"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_SCOPE = "scope"
 
 DEFAULT_SCAN_INTERVAL = 120
+
+SCOPE_SELF = "self"
+SCOPE_TEAM = "team"
 
 USAGE_URL = "https://ollama.com/api/usage"
 BALANCE_URL = "https://ollama.com/api/balance"

@@ -24,7 +24,9 @@ from .api import (
 from .const import (
     CONF_API_KEY,
     CONF_SCAN_INTERVAL,
+    CONF_SCOPE,
     DEFAULT_SCAN_INTERVAL,
+    SCOPE_SELF,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,13 +43,20 @@ def _scan_interval(entry: OllamaConfigEntry) -> int:
     )
 
 
+def _scope(entry: OllamaConfigEntry) -> str:
+    return entry.options.get(
+        CONF_SCOPE,
+        entry.data.get(CONF_SCOPE, SCOPE_SELF),
+    )
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
     api_key = entry.data[CONF_API_KEY]
     session = async_get_clientsession(hass)
 
     async def _async_update_with_handling() -> OllamaUsageData:
         try:
-            return await fetch_and_parse(session, api_key)
+            return await fetch_and_parse(session, api_key, scope=_scope(entry))
         except OllamaAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"API key rejected by ollama.com: {err}"
