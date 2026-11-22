@@ -34,9 +34,15 @@ PLATFORMS: list[str] = ["sensor"]
 type OllamaConfigEntry = ConfigEntry[DataUpdateCoordinator[OllamaUsageData]]
 
 
+def _scan_interval(entry: OllamaConfigEntry) -> int:
+    return entry.options.get(
+        CONF_SCAN_INTERVAL,
+        entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+    )
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bool:
     api_key = entry.data[CONF_API_KEY]
-    scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     session = async_get_clientsession(hass)
 
     async def _async_update_with_handling() -> OllamaUsageData:
@@ -65,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
         config_entry=entry,
         name=f"Ollama {entry.title}",
         update_method=_async_update_with_handling,
-        update_interval=timedelta(seconds=scan_interval),
+        update_interval=timedelta(seconds=_scan_interval(entry)),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -81,8 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OllamaConfigEntry) -> bo
 
 async def _async_update_listener(hass: HomeAssistant, entry: OllamaConfigEntry) -> None:
     coordinator = entry.runtime_data
-    new_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    coordinator.update_interval = timedelta(seconds=new_interval)
+    coordinator.update_interval = timedelta(seconds=_scan_interval(entry))
     await coordinator.async_request_refresh()
 
 

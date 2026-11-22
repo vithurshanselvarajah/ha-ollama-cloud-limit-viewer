@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -176,3 +176,21 @@ async def test_sensors_marked_unavailable_after_failed_update(hass: HomeAssistan
         await hass.async_block_till_done()
 
     assert entry.state is ConfigEntryState.SETUP_ERROR
+
+
+async def test_options_override_scan_interval(hass: HomeAssistant):
+    entry = _entry()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        return_value=_legacy_data(),
+    ):
+        await hass.config_entries.async_add(entry)
+        await hass.async_block_till_done()
+
+    assert entry.runtime_data.update_interval == timedelta(seconds=300)
+
+    hass.config_entries.async_update_entry(entry, options={"scan_interval": 60})
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data.update_interval == timedelta(seconds=60)
