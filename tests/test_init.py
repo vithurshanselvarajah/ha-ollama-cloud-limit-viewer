@@ -137,6 +137,8 @@ async def test_legacy_plan_sensors(hass: HomeAssistant):
     assert "weekly_remaining" in keys
     assert "included_balance" not in keys
     assert "included_allowance" not in keys
+    assert "session_spend" not in keys
+    assert "weekly_spend" not in keys
 
     assert _state(hass, entry, "session_requests") == "12"
     assert _state(hass, entry, "weekly_requests") == "180"
@@ -146,6 +148,20 @@ async def test_legacy_plan_sensors(hass: HomeAssistant):
     assert _state(hass, entry, "session_model_breakdown") == "minimax-m3.1-flash (10)"
     assert _state(hass, entry, "last_4_weeks_requests") == "900"
     assert _state(hass, entry, "purchased_balance") == "25.0"
+
+
+async def test_spend_sensors_created_when_cost_is_reported(hass: HomeAssistant):
+    data = _legacy_data()
+    data.session.usage_usd = 0.0125
+    data.weekly.usage_usd = 1.25
+    entry = await _setup_entry(hass, data)
+
+    keys = _keys(hass, entry)
+
+    assert "session_spend" in keys
+    assert "weekly_spend" in keys
+    assert _state(hass, entry, "session_spend") == "0.0125"
+    assert _state(hass, entry, "weekly_spend") == "1.25"
 
 
 async def test_credit_plan_sensors(hass: HomeAssistant):

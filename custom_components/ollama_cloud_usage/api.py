@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 WEEKLY_WINDOW = timedelta(days=7)
 ACTIVITY_WINDOW = timedelta(days=28)
-SESSION_WINDOW = timedelta(hours=6)
+SESSION_WINDOW = timedelta(hours=7)
 
 
 class OllamaApiError(Exception):

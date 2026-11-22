@@ -193,7 +193,7 @@ def test_build_legacy_session_window_uses_balance_reset():
     assert window.remaining_percent == balance.session_remaining_percent
     assert window.resets_at == balance.session_resets_at
     assert window.ending_at == balance.session_resets_at
-    assert window.starting_at == balance.session_resets_at - timedelta(hours=6)
+    assert window.starting_at == balance.session_resets_at - timedelta(hours=7)
 
 
 def test_build_legacy_weekly_window_uses_balance_reset():

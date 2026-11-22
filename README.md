@@ -48,7 +48,7 @@ Legacy plans are limited by request count rather than by spend. Ollama does not 
 
 Credit plans report a monthly allowance. The **session** and **weekly** windows do not exist, so those sensors are not created and the **balance** sensors are the ones to watch.
 
-Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them.
+Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them. The **spend** sensors are only created when Ollama actually reports cost, which on legacy plans it does not.
 
 ## Sensors
 

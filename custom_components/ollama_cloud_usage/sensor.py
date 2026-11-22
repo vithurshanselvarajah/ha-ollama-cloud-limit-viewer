@@ -325,41 +325,26 @@ SENSOR_DESCRIPTIONS: tuple[OllamaSensorDescription, ...] = (
 def _available_keys(data: OllamaUsageData) -> set[str]:
     keys: set[str] = set()
 
-    if data.session is not None:
+    for prefix, window in (
+        ("session", data.session),
+        ("weekly", data.weekly),
+        ("last_4_weeks", data.activity),
+    ):
+        if window is None:
+            continue
         keys.update(
             {
-                "session_requests",
-                "session_spend",
-                "session_top_model",
-                "session_model_breakdown",
-                "session_period_start",
-                "session_period_end",
-                "session_period_remaining",
+                f"{prefix}_requests",
+                f"{prefix}_top_model",
+                f"{prefix}_model_breakdown",
+                f"{prefix}_period_start",
+                f"{prefix}_period_end",
             }
         )
-    if data.weekly is not None:
-        keys.update(
-            {
-                "weekly_requests",
-                "weekly_spend",
-                "weekly_top_model",
-                "weekly_model_breakdown",
-                "weekly_period_start",
-                "weekly_period_end",
-                "weekly_period_remaining",
-            }
-        )
-    if data.activity is not None:
-        keys.update(
-            {
-                "last_4_weeks_requests",
-                "last_4_weeks_spend",
-                "last_4_weeks_top_model",
-                "last_4_weeks_model_breakdown",
-                "last_4_weeks_period_start",
-                "last_4_weeks_period_end",
-            }
-        )
+        if window.usage_usd is not None:
+            keys.add(f"{prefix}_spend")
+        if prefix != "last_4_weeks":
+            keys.add(f"{prefix}_period_remaining")
 
     balance = data.balance
     if balance is None:
