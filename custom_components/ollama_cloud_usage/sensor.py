@@ -11,22 +11,19 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-)
 
 from .api import BalanceReport, OllamaUsageData, UsageWindow
-from .const import DOMAIN
+from .coordinator import OllamaConfigEntry, OllamaCoordinator
+from .entity import OllamaUsageEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -557,7 +554,7 @@ def _available_keys(data: OllamaUsageData) -> set[str]:
 
 
 def _remove_orphaned_entities(
-    registry: er.EntityRegistry, entry: ConfigEntry, active_keys: set[str]
+    registry: er.EntityRegistry, entry: OllamaConfigEntry, active_keys: set[str]
 ) -> None:
     """Remove entities left behind by an earlier version of the integration."""
     for registry_entry in list(
@@ -573,10 +570,10 @@ def _remove_orphaned_entities(
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: OllamaConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: DataUpdateCoordinator[OllamaUsageData] = entry.runtime_data
+    coordinator: OllamaCoordinator = entry.runtime_data
     data = coordinator.data
     if data is None:
         _LOGGER.debug("No data available yet for %s, skipping sensors", entry.title)
@@ -631,31 +628,25 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(_sync_entities))
 
 
-class OllamaUsageSensor(
-    CoordinatorEntity[DataUpdateCoordinator[OllamaUsageData]], SensorEntity
-):
+class OllamaUsageSensor(OllamaUsageEntity, SensorEntity):
+    """Sensor for the Ollama cloud usage integration."""
+
     entity_description: OllamaSensorDescription
-    _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator[OllamaUsageData],
-        entry: ConfigEntry,
+        coordinator: OllamaCoordinator,
+        entry: OllamaConfigEntry,
         description: OllamaSensorDescription,
     ) -> None:
-        super().__init__(coordinator)
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry)
         self.entity_description = description
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=f"Ollama {entry.title}",
-            manufacturer="Ollama",
-            model="Cloud Usage",
-            entry_type=DeviceEntryType.SERVICE,
-        )
 
     @property
     def native_value(self) -> str | float | int | datetime | None:
+        """Return the value of the sensor."""
         if self.coordinator.data is None:
             return None
         return self.entity_description.value_fn(self.coordinator.data)

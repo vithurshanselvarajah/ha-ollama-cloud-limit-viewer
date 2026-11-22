@@ -11,6 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.ollama_cloud_usage.api import (
     BalanceReport,
     ModelUsage,
+    OllamaApiError,
     OllamaAuthError,
     OllamaUsageData,
     UsageWindow,
@@ -100,7 +101,7 @@ def _credit_data() -> OllamaUsageData:
 async def _setup_entry(hass: HomeAssistant, data: OllamaUsageData) -> ConfigEntry:
     entry = _entry()
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=data,
     ):
         await hass.config_entries.async_add(entry)
@@ -185,7 +186,7 @@ async def test_sensors_marked_unavailable_after_failed_update(hass: HomeAssistan
     entry = _entry()
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         side_effect=OllamaAuthError("bad key"),
     ):
         await hass.config_entries.async_add(entry)
@@ -198,7 +199,7 @@ async def test_stale_entities_are_removed(hass: HomeAssistant):
     entry = _entry()
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_legacy_data(),
     ):
         await hass.config_entries.async_add(entry)
@@ -215,7 +216,7 @@ async def test_stale_entities_are_removed(hass: HomeAssistant):
     assert stale.entity_id in registry.entities
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_credit_data(),
     ):
         await hass.config_entries.async_reload(entry.entry_id)
@@ -229,7 +230,7 @@ async def test_options_override_scan_interval(hass: HomeAssistant):
     entry = _entry()
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_legacy_data(),
     ):
         await hass.config_entries.async_add(entry)
@@ -303,3 +304,38 @@ async def test_other_model_requests_created_for_remainder(hass: HomeAssistant):
 
     assert "last_4_weeks_other_model_requests" in keys
     assert _state(hass, entry, "last_4_weeks_other_model_requests") == "42"
+
+
+async def test_coordinator_logs_lost_and_restored_connection(
+    hass: HomeAssistant, caplog
+):
+    entry = _entry()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        return_value=_legacy_data(),
+    ):
+        await hass.config_entries.async_add(entry)
+        await hass.async_block_till_done()
+
+    coordinator = entry.runtime_data
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        side_effect=OllamaApiError("boom"),
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert "Lost connection to ollama.com" in caplog.text
+
+    caplog.clear()
+
+    with patch(
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
+        return_value=_legacy_data(),
+    ):
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+
+    assert "Connection to ollama.com restored" in caplog.text

@@ -87,7 +87,7 @@ async def _setup(
         },
     )
     with patch(
-        "custom_components.ollama_cloud_usage.async_get_clientsession",
+        "custom_components.ollama_cloud_usage.coordinator.async_get_clientsession",
         return_value=session,
     ):
         await hass.config_entries.async_add(entry)

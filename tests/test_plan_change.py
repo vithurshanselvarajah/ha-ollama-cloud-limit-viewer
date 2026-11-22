@@ -74,7 +74,7 @@ def _credit_data() -> OllamaUsageData:
 async def _setup(hass: HomeAssistant, data: OllamaUsageData) -> MockConfigEntry:
     entry = _entry()
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=data,
     ):
         await hass.config_entries.async_add(entry)
@@ -100,7 +100,7 @@ async def test_upgrade_to_credit_plan_adds_new_sensors(hass: HomeAssistant):
     assert "session_remaining" in _keys(hass, entry)
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_credit_data(),
     ):
         entry.runtime_data.async_set_updated_data(_credit_data())
@@ -123,7 +123,7 @@ async def test_downgrade_to_legacy_plan_removes_credit_sensors(hass: HomeAssista
     assert "weekly_requests" not in _keys(hass, entry)
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_legacy_data(),
     ):
         entry.runtime_data.async_set_updated_data(_legacy_data())
@@ -150,7 +150,7 @@ async def test_plan_change_keeps_entity_ids_stable(hass: HomeAssistant):
     }
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_credit_data(),
     ):
         entry.runtime_data.async_set_updated_data(_credit_data())
@@ -172,7 +172,7 @@ async def test_sensors_become_available_after_plan_change(hass: HomeAssistant):
     entry = await _setup(hass, _legacy_data())
 
     with patch(
-        "custom_components.ollama_cloud_usage.fetch_and_parse",
+        "custom_components.ollama_cloud_usage.coordinator.fetch_and_parse",
         return_value=_credit_data(),
     ):
         entry.runtime_data.async_set_updated_data(_credit_data())
