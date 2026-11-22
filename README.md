@@ -50,6 +50,8 @@ Credit plans report a monthly allowance. The **session** and **weekly** windows 
 
 Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them. The **spend**, **token** and **cache** sensors are only created when Ollama actually reports those values, which on legacy plans it does not.
 
+The sensor set follows your plan, so a plan change is picked up on the next poll with no reconfiguration needed. If a legacy account is upgraded to a credit plan, the balance and token sensors appear and the legacy-only sensors are removed. If you downgrade the other way, the reverse happens. Sensors that exist in both plans keep their entity IDs, so dashboards and automations survive the change.
+
 ## Sensors
 
 ### Usage windows

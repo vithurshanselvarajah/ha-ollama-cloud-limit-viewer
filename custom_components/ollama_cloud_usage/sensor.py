@@ -13,7 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -556,6 +556,21 @@ def _available_keys(data: OllamaUsageData) -> set[str]:
     return keys
 
 
+def _remove_orphaned_entities(
+    registry: er.EntityRegistry, entry: ConfigEntry, active_keys: set[str]
+) -> None:
+    """Remove entities left behind by an earlier version of the integration."""
+    for registry_entry in list(
+        er.async_entries_for_config_entry(registry, entry.entry_id)
+    ):
+        unique_id = registry_entry.unique_id
+        if not unique_id or not unique_id.startswith(f"{entry.entry_id}_"):
+            continue
+        if unique_id.removeprefix(f"{entry.entry_id}_") in active_keys:
+            continue
+        registry.async_remove(registry_entry.entity_id)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -567,29 +582,53 @@ async def async_setup_entry(
         _LOGGER.debug("No data available yet for %s, skipping sensors", entry.title)
         return
 
-    active_keys = _available_keys(data)
-    _async_remove_stale_entities(hass, entry, active_keys)
+    entities: dict[str, OllamaUsageSensor] = {}
+    active_keys: set[str] = set()
 
-    async_add_entities(
-        OllamaUsageSensor(coordinator, entry, description)
-        for description in SENSOR_DESCRIPTIONS
-        if description.key in active_keys
-    )
+    @callback
+    def _sync_entities() -> None:
+        """Add and remove sensors so the entity set matches the current plan.
 
+        A plan can change at any time, for example when a legacy account is
+        upgraded to a credit plan, so the sensors are kept in sync with the
+        data instead of being decided once during setup.
+        """
+        new_data = coordinator.data
+        if new_data is None:
+            return
 
-def _async_remove_stale_entities(
-    hass: HomeAssistant, entry: ConfigEntry, active_keys: set[str]
-) -> None:
-    registry = er.async_get(hass)
-    for registry_entry in list(
-        er.async_entries_for_config_entry(registry, entry.entry_id)
-    ):
-        unique_id = registry_entry.unique_id
-        if not unique_id or not unique_id.startswith(f"{entry.entry_id}_"):
-            continue
-        if unique_id.removeprefix(f"{entry.entry_id}_") in active_keys:
-            continue
-        registry.async_remove(registry_entry.entity_id)
+        new_keys = _available_keys(new_data)
+        if new_keys == active_keys:
+            return
+
+        registry = er.async_get(hass)
+        for key, entity in list(entities.items()):
+            if key in new_keys:
+                continue
+            del entities[key]
+            registry.async_remove(entity.entity_id)
+
+        _remove_orphaned_entities(registry, entry, new_keys)
+
+        to_add = [
+            description
+            for description in SENSOR_DESCRIPTIONS
+            if description.key in new_keys and description.key not in entities
+        ]
+        if to_add:
+            new_entities = [
+                OllamaUsageSensor(coordinator, entry, description)
+                for description in to_add
+            ]
+            for entity in new_entities:
+                entities[entity.entity_description.key] = entity
+            async_add_entities(new_entities)
+
+        active_keys.clear()
+        active_keys.update(new_keys)
+
+    _sync_entities()
+    entry.async_on_unload(coordinator.async_add_listener(_sync_entities))
 
 
 class OllamaUsageSensor(
