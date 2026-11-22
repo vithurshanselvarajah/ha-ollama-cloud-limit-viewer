@@ -31,7 +31,7 @@ Ollama serves two different plan shapes, and the integration supports both.
 }
 ```
 
-Legacy plans are limited by request count rather than by spend. Ollama does not report cost or token usage for them, so the **spend** sensors are not created and the **remaining** sensors are the ones to watch.
+Legacy plans are limited by request count rather than by spend. Ollama does not report cost or token usage for them, so the **spend**, **token** and **cache** sensors are not created and the **remaining** sensors are the ones to watch.
 
 ### Credit plans (monthly USD allowance)
 
@@ -48,7 +48,7 @@ Legacy plans are limited by request count rather than by spend. Ollama does not 
 
 Credit plans report a monthly allowance. The **session** and **weekly** windows do not exist, so those sensors are not created and the **balance** sensors are the ones to watch.
 
-Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them. The **spend** sensors are only created when Ollama actually reports cost, which on legacy plans it does not.
+Sensors that do not apply to your plan are simply never created — you will not see empty placeholders for them. The **spend**, **token** and **cache** sensors are only created when Ollama actually reports those values, which on legacy plans it does not.
 
 ## Sensors
 
@@ -153,8 +153,9 @@ Because the reset times come straight from Ollama, no local reset prediction is 
    - **Account Name**: A friendly label (e.g. "Main", "Work")
    - **API Key**: An ollama.com API key (see below)
    - **Update Interval**: How often to check (default: 120 seconds / 2 minutes)
+   - **Usage Scope**: `self` for your own usage, `team` for the whole team (team admins only)
 
-The update interval can also be changed later through the integration's **Configure** button, without removing and re-adding the entry.
+The update interval and scope can also be changed later through the integration's **Configure** button, without removing and re-adding the entry.
 
 ### Getting an API key
 
@@ -178,6 +179,13 @@ Version 3.0 replaces the retired `/api/usage` response shape with Ollama's curre
 - The `session_spend`, `weekly_spend` and `last_4_weeks_spend` sensors keep their names, but on legacy plans Ollama no longer reports cost, so they are not created there.
 - The `session_period_*` and `weekly_period_*` sensors now report the real reset times from the balance API instead of locally predicted ones.
 - New sensors for the remaining quota, credit balances and purchased credits have been added.
+
+## Migration from v3.0
+
+Version 3.1 adds the token, cache and per-model cost sensors, plus the team scope option.
+
+- All new sensors only appear when Ollama actually reports the underlying values, so legacy accounts see no change.
+- Existing sensors are untouched.
 
 ## License
 
