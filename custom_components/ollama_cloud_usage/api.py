@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import aiohttp
 
@@ -258,7 +259,7 @@ async def _request_json(
     url: str,
     api_key: str,
     params: dict[str, str] | None = None,
-) -> dict:
+) -> dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
@@ -303,7 +304,7 @@ async def fetch_usage(
     api_key: str,
     usage_range: str = USAGE_RANGE_7D,
     scope: str = SCOPE_SELF,
-) -> dict:
+) -> dict[str, Any]:
     return await _request_json(
         session,
         USAGE_URL,
@@ -312,7 +313,7 @@ async def fetch_usage(
     )
 
 
-async def fetch_balance(session: aiohttp.ClientSession, api_key: str) -> dict:
+async def fetch_balance(session: aiohttp.ClientSession, api_key: str) -> dict[str, Any]:
     return await _request_json(session, BALANCE_URL, api_key)
 
 
@@ -394,7 +395,7 @@ def _parse_models(items: object) -> list[ModelUsage]:
     return models
 
 
-def _parse_summary(payload: dict) -> UsageSummary:
+def _parse_summary(payload: dict[str, Any]) -> UsageSummary:
     request_count = _coerce_int(payload.get("request_count", 0))
     if request_count is None:
         raise OllamaParseError(
@@ -421,7 +422,7 @@ def _parse_summary(payload: dict) -> UsageSummary:
     )
 
 
-def _parse_buckets(payload: dict) -> list[UsageBucket]:
+def _parse_buckets(payload: dict[str, Any]) -> list[UsageBucket]:
     raw_buckets = payload.get("buckets")
     if raw_buckets is None:
         return []
@@ -459,7 +460,7 @@ def _parse_buckets(payload: dict) -> list[UsageBucket]:
     return buckets
 
 
-def parse_usage(payload: dict) -> UsageReport:
+def parse_usage(payload: dict[str, Any]) -> UsageReport:
     if not isinstance(payload, dict):
         raise OllamaParseError(
             f"Expected JSON object from /api/usage, got {type(payload).__name__}"
@@ -506,7 +507,7 @@ def _parse_legacy_limit(
     return percent, resets_at
 
 
-def parse_balance(payload: dict) -> BalanceReport:
+def parse_balance(payload: dict[str, Any]) -> BalanceReport:
     if not isinstance(payload, dict):
         raise OllamaParseError(
             f"Expected JSON object from /api/balance, got {type(payload).__name__}"
@@ -562,86 +563,92 @@ def parse_balance(payload: dict) -> BalanceReport:
     return report
 
 
+@dataclass
+class _ModelTotals:
+    request_count: int = 0
+    usage_usd: float = 0.0
+    input_tokens: int = 0
+    cached_input_tokens: int = 0
+    output_tokens: int = 0
+    has_usage_usd: bool = False
+    has_input_tokens: bool = False
+    has_cached_input_tokens: bool = False
+    has_output_tokens: bool = False
+
+    def add(self, model: ModelUsage) -> None:
+        """Add the usage of a single model."""
+        self.request_count += model.request_count
+        if model.usage_usd is not None:
+            self.usage_usd += model.usage_usd
+            self.has_usage_usd = True
+        if model.input_tokens is not None:
+            self.input_tokens += model.input_tokens
+            self.has_input_tokens = True
+        if model.cached_input_tokens is not None:
+            self.cached_input_tokens += model.cached_input_tokens
+            self.has_cached_input_tokens = True
+        if model.output_tokens is not None:
+            self.output_tokens += model.output_tokens
+            self.has_output_tokens = True
+
+    def to_model_usage(self, name: str) -> ModelUsage:
+        """Return the accumulated usage for a model."""
+        return ModelUsage(
+            name=name,
+            request_count=self.request_count,
+            usage_usd=self.usage_usd if self.has_usage_usd else None,
+            input_tokens=self.input_tokens if self.has_input_tokens else None,
+            cached_input_tokens=(
+                self.cached_input_tokens if self.has_cached_input_tokens else None
+            ),
+            output_tokens=self.output_tokens if self.has_output_tokens else None,
+        )
+
+
+@dataclass
+class _RemainderTotals:
+    request_count: int = 0
+    usage_usd: float = 0.0
+    input_tokens: int = 0
+    cached_input_tokens: int = 0
+    output_tokens: int = 0
+    has_usage_usd: bool = False
+    has_input_tokens: bool = False
+    has_cached_input_tokens: bool = False
+    has_output_tokens: bool = False
+
+
 def _sum_models(buckets: list[UsageBucket]) -> list[ModelUsage]:
-    totals: dict[str, dict[str, float | int | None | bool]] = {}
+    totals: dict[str, _ModelTotals] = {}
     for bucket in buckets:
         for model in bucket.models:
-            entry = totals.setdefault(
-                model.name,
-                {
-                    "request_count": 0,
-                    "usage_usd": 0.0,
-                    "input_tokens": 0,
-                    "cached_input_tokens": 0,
-                    "output_tokens": 0,
-                    "has_usage_usd": False,
-                    "has_input_tokens": False,
-                    "has_cached_input_tokens": False,
-                    "has_output_tokens": False,
-                },
-            )
-            entry["request_count"] += model.request_count
-            if model.usage_usd is not None:
-                entry["usage_usd"] += model.usage_usd
-                entry["has_usage_usd"] = True
-            if model.input_tokens is not None:
-                entry["input_tokens"] += model.input_tokens
-                entry["has_input_tokens"] = True
-            if model.cached_input_tokens is not None:
-                entry["cached_input_tokens"] += model.cached_input_tokens
-                entry["has_cached_input_tokens"] = True
-            if model.output_tokens is not None:
-                entry["output_tokens"] += model.output_tokens
-                entry["has_output_tokens"] = True
+            entry = totals.setdefault(model.name, _ModelTotals())
+            entry.add(model)
     return [
-        ModelUsage(
-            name=name,
-            request_count=int(entry["request_count"]),
-            usage_usd=entry["usage_usd"] if entry["has_usage_usd"] else None,
-            input_tokens=(
-                int(entry["input_tokens"]) if entry["has_input_tokens"] else None
-            ),
-            cached_input_tokens=(
-                int(entry["cached_input_tokens"])
-                if entry["has_cached_input_tokens"]
-                else None
-            ),
-            output_tokens=(
-                int(entry["output_tokens"]) if entry["has_output_tokens"] else None
-            ),
-        )
+        entry.to_model_usage(name)
         for name, entry in sorted(
-            totals.items(), key=lambda item: (-item[1]["request_count"], item[0])
+            totals.items(), key=lambda item: (-item[1].request_count, item[0])
         )
     ]
 
 
-def _sum_remainder(buckets: list[UsageBucket]) -> dict[str, float | int | None]:
-    usage_values = [
-        b.remainder_usage_usd for b in buckets if b.remainder_usage_usd is not None
-    ]
-    input_values = [
-        b.remainder_input_tokens
-        for b in buckets
-        if b.remainder_input_tokens is not None
-    ]
-    cached_values = [
-        b.remainder_cached_input_tokens
-        for b in buckets
-        if b.remainder_cached_input_tokens is not None
-    ]
-    output_values = [
-        b.remainder_output_tokens
-        for b in buckets
-        if b.remainder_output_tokens is not None
-    ]
-    return {
-        "request_count": sum(bucket.remainder_request_count for bucket in buckets),
-        "usage_usd": sum(usage_values) if usage_values else None,
-        "input_tokens": sum(input_values) if input_values else None,
-        "cached_input_tokens": sum(cached_values) if cached_values else None,
-        "output_tokens": sum(output_values) if output_values else None,
-    }
+def _sum_remainder(buckets: list[UsageBucket]) -> _RemainderTotals:
+    totals = _RemainderTotals()
+    for bucket in buckets:
+        totals.request_count += bucket.remainder_request_count
+        if bucket.remainder_usage_usd is not None:
+            totals.usage_usd += bucket.remainder_usage_usd
+            totals.has_usage_usd = True
+        if bucket.remainder_input_tokens is not None:
+            totals.input_tokens += bucket.remainder_input_tokens
+            totals.has_input_tokens = True
+        if bucket.remainder_cached_input_tokens is not None:
+            totals.cached_input_tokens += bucket.remainder_cached_input_tokens
+            totals.has_cached_input_tokens = True
+        if bucket.remainder_output_tokens is not None:
+            totals.output_tokens += bucket.remainder_output_tokens
+            totals.has_output_tokens = True
+    return totals
 
 
 def _window_from_buckets(
@@ -675,11 +682,17 @@ def _window_from_buckets(
         starting_at=start,
         ending_at=end,
         models=_sum_models(selected),
-        remainder_request_count=int(remainder["request_count"]),
-        remainder_usage_usd=remainder["usage_usd"],
-        remainder_input_tokens=remainder["input_tokens"],
-        remainder_cached_input_tokens=remainder["cached_input_tokens"],
-        remainder_output_tokens=remainder["output_tokens"],
+        remainder_request_count=remainder.request_count,
+        remainder_usage_usd=(remainder.usage_usd if remainder.has_usage_usd else None),
+        remainder_input_tokens=(
+            remainder.input_tokens if remainder.has_input_tokens else None
+        ),
+        remainder_cached_input_tokens=(
+            remainder.cached_input_tokens if remainder.has_cached_input_tokens else None
+        ),
+        remainder_output_tokens=(
+            remainder.output_tokens if remainder.has_output_tokens else None
+        ),
     )
 
 
@@ -766,7 +779,7 @@ async def _fetch_usage_with_scope(
     api_key: str,
     usage_range: str,
     scope: str,
-) -> tuple[dict, str]:
+) -> tuple[dict[str, Any], str]:
     """Fetch usage for the requested scope, falling back to personal scope.
 
     Team scope is only available to team admins. Anyone else gets a 403, so

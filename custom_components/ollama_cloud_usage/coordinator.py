@@ -109,15 +109,17 @@ class OllamaCoordinator(DataUpdateCoordinator[OllamaUsageData]):
 
 def scan_interval(entry: ConfigEntry) -> int:
     """Return the configured update interval."""
-    return entry.options.get(
+    value = entry.options.get(
         CONF_SCAN_INTERVAL,
         entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
+    return int(value)
 
 
 def scope(entry: ConfigEntry) -> str:
     """Return the configured usage scope."""
-    return entry.options.get(
+    value = entry.options.get(
         CONF_SCOPE,
         entry.data.get(CONF_SCOPE, SCOPE_SELF),
     )
+    return str(value)

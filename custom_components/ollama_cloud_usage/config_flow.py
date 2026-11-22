@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 import aiohttp
-import voluptuous as vol
+import probatio
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -28,20 +28,22 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
+STEP_USER_DATA_SCHEMA = probatio.Schema(
     {
-        vol.Required(CONF_ACCOUNT_NAME, default="Main"): str,
-        vol.Required(CONF_API_KEY): str,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
-            int, vol.Range(min=60, max=3600)
+        probatio.Required(CONF_ACCOUNT_NAME, default="Main"): str,
+        probatio.Required(CONF_API_KEY): str,
+        probatio.Optional(
+            CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
+        ): probatio.All(int, probatio.Range(min=60, max=3600)),
+        probatio.Optional(CONF_SCOPE, default=SCOPE_SELF): probatio.In(
+            [SCOPE_SELF, SCOPE_TEAM]
         ),
-        vol.Optional(CONF_SCOPE, default=SCOPE_SELF): vol.In([SCOPE_SELF, SCOPE_TEAM]),
     }
 )
 
-STEP_REAUTH_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
+STEP_REAUTH_DATA_SCHEMA = probatio.Schema({probatio.Required(CONF_API_KEY): str})
 
-STEP_RECONFIGURE_DATA_SCHEMA = vol.Schema({vol.Required(CONF_API_KEY): str})
+STEP_RECONFIGURE_DATA_SCHEMA = probatio.Schema({probatio.Required(CONF_API_KEY): str})
 
 
 async def _async_validate(hass: HomeAssistant, api_key: str) -> str | None:
@@ -157,12 +159,12 @@ class OllamaCloudUsageOptionsFlow(OptionsFlow):
             CONF_SCOPE,
             self.config_entry.data.get(CONF_SCOPE, SCOPE_SELF),
         )
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Optional(CONF_SCAN_INTERVAL, default=current): vol.All(
-                    int, vol.Range(min=60, max=3600)
+                probatio.Optional(CONF_SCAN_INTERVAL, default=current): probatio.All(
+                    int, probatio.Range(min=60, max=3600)
                 ),
-                vol.Optional(CONF_SCOPE, default=current_scope): vol.In(
+                probatio.Optional(CONF_SCOPE, default=current_scope): probatio.In(
                     [SCOPE_SELF, SCOPE_TEAM]
                 ),
             }

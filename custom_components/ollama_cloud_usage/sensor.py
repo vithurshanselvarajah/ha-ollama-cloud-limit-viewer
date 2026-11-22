@@ -11,10 +11,9 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .api import BalanceReport, OllamaUsageData, UsageWindow
@@ -110,7 +109,8 @@ def _window_seconds_remaining(window: UsageWindow | None) -> float | None:
 def _balance_value(balance: BalanceReport | None, attribute: str) -> float | None:
     if balance is None:
         return None
-    return getattr(balance, attribute)
+    value = getattr(balance, attribute)
+    return float(value) if isinstance(value, (int, float)) else None
 
 
 def _balance_period_start(balance: BalanceReport | None) -> datetime | None:

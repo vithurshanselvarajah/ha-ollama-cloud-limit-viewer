@@ -29,6 +29,10 @@ test = [
     "pytest-homeassistant-custom-component>=0.13.375",
     "pytest-asyncio>=1.4.0",
 ]
+lint = [
+    "mypy>=2.0.0",
+    "ruff>=0.17.6",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -44,3 +48,8 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
 ]
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+files = ["custom_components/ollama_cloud_usage"]
