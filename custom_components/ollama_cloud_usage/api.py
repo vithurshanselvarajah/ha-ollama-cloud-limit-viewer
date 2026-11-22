@@ -494,7 +494,6 @@ def build_activity_window(report: UsageReport) -> UsageWindow:
 
 def build_legacy_session_window(
     hourly: UsageReport,
-    daily: UsageReport,
     balance: BalanceReport,
 ) -> UsageWindow | None:
     if balance.session_remaining_percent is None:
@@ -562,7 +561,7 @@ async def fetch_and_parse(
     data.activity = build_activity_window(daily)
 
     if balance.is_legacy_plan:
-        data.session = build_legacy_session_window(hourly, daily, balance)
+        data.session = build_legacy_session_window(hourly, balance)
         data.weekly = build_legacy_weekly_window(daily, balance)
     else:
         data.session = build_credit_session_window(hourly)

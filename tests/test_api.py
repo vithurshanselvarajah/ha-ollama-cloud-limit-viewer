@@ -184,9 +184,8 @@ def test_build_activity_window_covers_28_days():
 
 def test_build_legacy_session_window_uses_balance_reset():
     hourly = _usage_report("api_usage_24h.json")
-    daily = _usage_report("api_usage_30d.json")
     balance = parse_balance(_load("api_balance_legacy.json"))
-    window = build_legacy_session_window(hourly, daily, balance)
+    window = build_legacy_session_window(hourly, balance)
 
     assert window is not None
     assert window.period_type == "session"
@@ -225,5 +224,5 @@ def test_build_legacy_session_window_without_session_limit():
         }
     )
 
-    assert build_legacy_session_window(hourly, daily, balance) is None
+    assert build_legacy_session_window(hourly, balance) is None
     assert build_legacy_weekly_window(daily, balance) is None
